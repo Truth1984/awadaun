@@ -1,0 +1,29 @@
+{
+  "name": "backend-core",
+  "version": "1.0.0",
+  "description": "Backendnode core",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "init": "./initialize.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Truth1984/backend-core.git"
+  },
+  "author": "Awada.Z",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Truth1984/backend-core/issues"
+  },
+  "homepage": "https://github.com/Truth1984/backend-core#readme",
+  "dependencies": {
+    "archiver": "^5.0.2",
+    "awadau": "^1.0.7",
+    "bcryptjs": "^2.4.3",
+    "download": "^8.0.0",
+    "fs-extra": "^9.0.1",
+    "iconv-lite": "^0.6.2",
+    "uuid": "^8.3.0"
+  }
+}
