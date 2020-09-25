@@ -10,6 +10,7 @@ const download = require("download");
 const archiver = require("archiver");
 const readline = require("readline");
 const { spawnSync } = require("child_process");
+const conn = require("./conn");
 var un = {};
 
 un.uuid = (v4 = true) => (v4 ? uuid.v4() : uuid.v1());
@@ -167,3 +168,18 @@ un.fileProcess = (inputPath, outputPath, inputCallback) => {
   };
   return perform().then(() => new Promise((resolve) => outputStream.end(() => resolve())));
 };
+
+/**
+ * @param {{
+    port: 6379,
+    host: "localhost",
+    password: "",
+    family: 4,
+    db: 0
+  }} config redis config
+ */
+un.connRedis = (config) => new conn.Redis(config);
+
+un.sql = conn.SQL;
+
+module.exports = un;
