@@ -1,5 +1,5 @@
 {
-  "name": "backend-core",
+  "name": "@truth1984/backend-core",
   "version": "1.0.0",
   "description": "Backendnode core",
   "main": "index.js",
@@ -27,5 +27,6 @@
     "ioredis": "^4.17.3",
     "knex": "^0.21.5",
     "uuid": "^8.3.0"
-  }
+  },
+  "devDependencies": {}
 }
