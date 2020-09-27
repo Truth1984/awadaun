@@ -1,11 +1,9 @@
 {
-  "name": "@truth1984/backend-core",
+  "name": "backend-core",
   "version": "1.0.0",
-  "description": "Backendnode core",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "init": "./initialize.sh"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
