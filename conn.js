@@ -76,12 +76,13 @@ class SQL {
   /**
    * 
    * @param {{
-      client: "mysql",
+      client: "mysql" | "postgres" | "mariadb" | "mssql" | "sqlite" | "sqlite::memory",
       connection:{
         host: "localhost",
         user:"",
         password:"",
-        database:""
+        database:"",
+        port:number
       }
    }} config 
    * @param {()=>{}} catcher 
@@ -98,6 +99,12 @@ class SQL {
     return this;
   }
 
+  /**
+   * ```createTableIfNotExists(tableName, t=> {
+      t.increments("userid");
+      t.string("username").notNullable();
+  })```
+   */
   _CREATE() {
     return this._conn.schema;
   }
