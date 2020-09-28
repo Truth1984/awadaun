@@ -1,6 +1,6 @@
 {
   "name": "backend-core",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "main": "index.js",
   "description": "utils",
   "scripts": {
@@ -21,6 +21,8 @@
     "awadau": "^1.0.7",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.19.0",
+    "bunyan": "^1.8.14",
+    "colors": "^1.4.0",
     "compression": "^1.7.4",
     "download": "^8.0.0",
     "express": "^4.17.1",

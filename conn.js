@@ -85,12 +85,12 @@ class SQL {
         port:number
       }
    }} config 
-   * @param {()=>{}} catcher 
    */
-  constructor(config, catcher = u.log) {
+  constructor(config, errorLog = u.log, infoLog = u.log) {
     this._conn = knex(config);
     this.sequence = knex(config).queryBuilder();
-    this.catcher = catcher;
+    this.infoLog = infoLog;
+    this.errorLog = errorLog;
   }
 
   _TABLE(tableName) {
@@ -161,13 +161,13 @@ class SQL {
   }
 
   _RUN() {
-    return this.sequence.then((data) => data).catch(this.catcher);
+    return this.sequence.then((data) => data).catch(this.errorLog);
   }
 
   _RUNLOG() {
-    u.log(this.sequence.toQuery());
+    this.infoLog(this.sequence.toQuery());
     return this._RUN().then((data) => {
-      u.log(data);
+      this.infoLog(data);
       return data;
     });
   }
@@ -190,7 +190,7 @@ class SQL {
     return this._conn
       .raw(string)
       .then((data) => data)
-      .catch(this.catcher);
+      .catch(this.errorLog);
   }
 
   _toString() {

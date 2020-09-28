@@ -7,6 +7,7 @@ const vhost = require("vhost");
 const helmet = require("helmet");
 const schedule = require("node-schedule");
 const tl2 = require("tl2");
+const loggerModifier = require("./Addon/loggerModifier");
 
 module.exports = class Framework {
   /**
@@ -29,7 +30,13 @@ module.exports = class Framework {
         "post-process" : [],
         "pre-terminate" : []
       },
-      logger:()=>{},
+      logger: {
+        type : "on" | "off" | "bunyan-dev" | "bunyan",
+        bunyan : {
+          name : string,
+          fileBaseDir: string
+        }
+      },
     }} config
  * master controls most of the schedule work
  */
@@ -58,12 +65,18 @@ module.exports = class Framework {
           "post-process": [],
           "pre-terminate": [],
         },
-        logger: u.log,
+        logger: {
+          type: "on",
+          bunyan: {
+            name: "nodeApp",
+            fileBaseDir: process.cwd(),
+          },
+        },
       },
       config
     );
     this.config = config;
-
+    this.logger = loggerModifier(this.config.logger);
     this.runtime = {
       scheduler: {},
     };
@@ -129,8 +142,8 @@ module.exports = class Framework {
     this.config.perform[level].push(operation);
   }
 
-  run(stepLogger = this.config.logger) {
-    let task = new tl2({}, stepLogger);
+  run() {
+    let task = new tl2();
     task.add("initialization", () => {
       this.config.serveStatic.htmlPath.map((i) => this.app.use(express.static(i, { extensions: ["html"] })));
       this.config.serveStatic.filePath.map((i) => this.app.use(express.static(i)));
@@ -148,7 +161,7 @@ module.exports = class Framework {
     });
 
     task.add("wrap-up", async () => {
-      this.app.listen(this.config.listen, () => this.config.logger(`server listen on http port ${this.config.listen}`));
+      this.app.listen(this.config.listen, () => this.logger.info(`server listen on http port ${this.config.listen}`));
     });
 
     task.add("post-process", async () => {
