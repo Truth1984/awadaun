@@ -3,7 +3,7 @@ const un = require("../core");
 const bunyan = require("bunyan");
 const fs = require("fs");
 const path = require("path");
-const colors = require("colors");
+const colors = require("colors/safe");
 
 module.exports = (config) => {
   if (config.type == "on") {
