@@ -5,6 +5,16 @@ const fs = require("fs");
 const path = require("path");
 const colors = require("colors/safe");
 
+/**
+ * @param {{
+        type : "on" | "off" | "bunyan-dev" | "bunyan",
+        bunyan : {
+          name : string,
+          fileBaseDir: string,
+          baseLevel: "trace" | "debug" | "info" | "warn" | "error" | "fatal"
+        }
+      }} config 
+ */
 module.exports = (config) => {
   if (config.type == "on") {
     return {
@@ -39,6 +49,11 @@ module.exports = (config) => {
   let errorStream = fs.createWriteStream(path.join(config.bunyan.fileBaseDir, `error.log`), { flags: "a" });
   let fatalStream = fs.createWriteStream(path.join(config.bunyan.fileBaseDir, `fatal.log`), { flags: "a" });
 
+  let levelSwitch = () => {
+    if (config.bunyan.baseLevel == "") return config.type == "bunyan" ? "warn" : "trace";
+    return config.bunyan.baseLevel;
+  };
+
   let streamSwitch = () => {
     if (config.type == "bunyan-dev")
       return {
@@ -63,12 +78,7 @@ module.exports = (config) => {
     };
   };
 
-  let streams = [
-    {
-      level: "trace",
-      stream: streamSwitch(),
-    },
-  ];
+  let streams = [{ level: levelSwitch(), stream: streamSwitch() }];
 
-  return bunyan.createLogger(u.mapMergeDeep({ streams }, u.mapGetExcept(config.bunyan, "fileBaseDir")));
+  return bunyan.createLogger(u.mapMergeDeep({ streams }, u.mapGetExcept(config.bunyan, "fileBaseDir", "baseLevel")));
 };

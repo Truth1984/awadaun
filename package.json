@@ -1,6 +1,6 @@
 {
   "name": "backend-core",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "main": "index.js",
   "description": "utils",
   "scripts": {
@@ -18,7 +18,7 @@
   "homepage": "https://github.com/Truth1984/backend-core#readme",
   "dependencies": {
     "archiver": "^5.0.2",
-    "awadau": "^1.0.8",
+    "awadau": "^1.0.9",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.19.0",
     "bunyan": "^1.8.14",

@@ -34,8 +34,13 @@ module.exports = class Framework {
         type : "on" | "off" | "bunyan-dev" | "bunyan",
         bunyan : {
           name : string,
-          fileBaseDir: string
+          fileBaseDir: string,
+          baseLevel: "trace" | "debug" | "info" | "warn" | "error" | "fatal"
         }
+      },
+      handle404: {
+        type: "message" | "filePath" | "function",
+        value: string | ((req, res, next) => {}),
       },
     }} config
  * master controls most of the schedule work
@@ -70,7 +75,12 @@ module.exports = class Framework {
           bunyan: {
             name: "nodeApp",
             fileBaseDir: process.cwd(),
+            baseLevel: "",
           },
+        },
+        handle404: {
+          type: "message",
+          value: "404 not found",
         },
       },
       config
@@ -150,6 +160,7 @@ module.exports = class Framework {
       this.config.serveStatic.vhost.map((i) => this.app.use(vhost(i.domain, express.static(i.path))));
 
       this.config.schedule.map((i) => (this.runtime[i.name] = schedule.scheduleJob(i.pattern, i.operation)));
+      this.app.get("/health-check", (req, res) => res.status(200).send("OK"));
     });
 
     task.add("pre-process", async () => {
@@ -161,6 +172,14 @@ module.exports = class Framework {
     });
 
     task.add("wrap-up", async () => {
+      //handle404
+      if (this.config.handle404.type == "message")
+        this.app.use((req, res) => res.status(404).send(this.config.handle404.value));
+      if (this.config.handle404.type == "filePath")
+        this.app.use((req, res) => res.status(404).sendFile(this.config.handle404.value));
+      if (this.config.handle404.type == "function")
+        this.app.use((req, res, next) => this.config.handle404.value(req, res, next));
+
       this.app.listen(this.config.listen, () => this.logger.info(`server listen on http port ${this.config.listen}`));
     });
 
@@ -178,7 +197,7 @@ module.exports = class Framework {
 
       //catches uncaught exceptions
       process.on("uncaughtException", (error, origin) => {
-        console.error({ error, origin });
+        this.logger.fatal({ error, origin });
         process.exit();
       });
     });
