@@ -46,7 +46,8 @@ module.exports = class Framework {
       secret: {
         directory: string,
         filename: string,
-        keys: string[]
+        keys: string[],
+        additional: {}
       },
     }} config
  * master controls most of the schedule work
@@ -92,6 +93,25 @@ module.exports = class Framework {
           directory: un.filePathNormalize(process.cwd(), "Personal"),
           filename: "config.js",
           keys: ["listen"],
+          additional: {
+            redis: {
+              enable: false,
+              port: 6379,
+              host: "localhost",
+              password: "",
+              cluster: [],
+            },
+            sql: {
+              enable: false,
+              client: "mysql",
+              connection: {
+                host: "localhost",
+                user: "",
+                password: "",
+                database: "",
+              },
+            },
+          },
         },
       },
       config

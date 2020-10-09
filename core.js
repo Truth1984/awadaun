@@ -204,8 +204,7 @@ un.fileProcess = (inputPath, outputPath, inputCallback) => {
     port: 6379,
     host: "localhost",
     password: "",
-    family: 4,
-    db: 0
+    cluster: { port: number, host: string }[]
   }} config redis config
  */
 un.connRedis = (config) => new conn.Redis(config);

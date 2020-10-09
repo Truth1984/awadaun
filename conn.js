@@ -4,7 +4,8 @@ const ioredis = require("ioredis");
 
 class Redis {
   constructor(config) {
-    this.redis = new ioredis(config);
+    if (u.len(config.cluster) > 0) this.redis = new ioredis.Cluster(config);
+    else this.redis = new ioredis(config);
   }
 
   async add(pairs, expireMs = -1) {

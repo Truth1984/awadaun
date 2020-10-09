@@ -6,7 +6,8 @@ const u = require("awadau");
  * @param {{
         directory: string,
         filename: string,
-        keys: string[]
+        keys: string[],
+        additional: {}
     }} secretConfig
  */
 module.exports = (secretConfig, originalConfig) => {
@@ -21,7 +22,9 @@ module.exports = (secretConfig, originalConfig) => {
         )
         .then(() =>
           un.fileWriteSync(
-            `module.exports = ${u.jsonToString(u.mapGetExist(originalConfig, ...secretConfig.keys))}`,
+            `module.exports = ${u.jsonToString(
+              u.mapMerge(u.mapGetExist(originalConfig, ...secretConfig.keys), secretConfig.additional)
+            )}`,
             false,
             secretPath
           )
