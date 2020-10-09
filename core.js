@@ -60,11 +60,11 @@ un.textEncryptBase64 = (text, encrypting = true) => {
 /**
  * normalize path, also replace ~ with $home
  */
-un.filePathNormalize = (path) => paths.normalize(path).replace("~", process.env.HOME);
+un.filePathNormalize = (...path) => u.stringReplace(paths.normalize(paths.join(...path)), { "~": process.env.HOME });
 
 un.fileExist = async (path) => {
   path = un.filePathNormalize(path);
-  return fs.exists(path);
+  return fs.existsSync(path);
 };
 
 /**

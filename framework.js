@@ -8,6 +8,7 @@ const helmet = require("helmet");
 const schedule = require("node-schedule");
 const tl2 = require("tl2");
 const loggerModifier = require("./Addon/loggerModifier");
+const secretHandle = require("./Addon/secretHandle");
 
 module.exports = class Framework {
   /**
@@ -41,6 +42,11 @@ module.exports = class Framework {
       handle404: {
         type: "message" | "filePath" | "function",
         value: string | ((req, res, next) => {}),
+      },
+      secret: {
+        directory: string,
+        filename: string,
+        keys: string[]
       },
     }} config
  * master controls most of the schedule work
@@ -81,6 +87,11 @@ module.exports = class Framework {
         handle404: {
           type: "message",
           value: "404 not found",
+        },
+        secret: {
+          directory: un.filePathNormalize(process.cwd(), "Personal"),
+          filename: "config.js",
+          keys: ["listen"],
         },
       },
       config
@@ -154,7 +165,8 @@ module.exports = class Framework {
 
   run() {
     let task = new tl2();
-    task.add("initialization", () => {
+    task.add("initialization", async () => {
+      this.config = await secretHandle(this.config.secret, this.config);
       this.config.serveStatic.htmlPath.map((i) => this.app.use(express.static(i, { extensions: ["html"] })));
       this.config.serveStatic.filePath.map((i) => this.app.use(express.static(i)));
       this.config.serveStatic.vhost.map((i) => this.app.use(vhost(i.domain, express.static(i.path))));
