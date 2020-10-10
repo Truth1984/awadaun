@@ -6,16 +6,17 @@ const path = require("path");
 const colors = require("colors/safe");
 
 /**
- * @param {{
+ * @param {{"logger": {
         type : "on" | "off" | "bunyan-dev" | "bunyan",
         bunyan : {
           name : string,
-          fileBaseDir: string,
           baseLevel: "trace" | "debug" | "info" | "warn" | "error" | "fatal"
         }
-      }} config 
+      }}} config 
  */
 module.exports = (config) => {
+  let directory = config.directories.logger;
+  config = config.logger;
   if (config.type == "on") {
     return {
       trace: (msg) => u.log(msg, undefined, "trace"),
@@ -36,7 +37,7 @@ module.exports = (config) => {
       fatal: () => {},
     };
   }
-  if (!un.fileIsDir(config.bunyan.fileBaseDir)) throw "loggerModifier.config.bunyan.fileBaseDir is not a directory";
+  if (!un.fileIsDir(directory)) throw "directories.logger is not a directory";
 
   let colorSelector = (level) => {
     // trace:10, debug: 20, info: 30, warning: 40, error: 50, fatal: 60
@@ -45,9 +46,9 @@ module.exports = (config) => {
     return colors.red;
   };
 
-  let warnStream = fs.createWriteStream(path.join(config.bunyan.fileBaseDir, `warn.log`), { flags: "a" });
-  let errorStream = fs.createWriteStream(path.join(config.bunyan.fileBaseDir, `error.log`), { flags: "a" });
-  let fatalStream = fs.createWriteStream(path.join(config.bunyan.fileBaseDir, `fatal.log`), { flags: "a" });
+  let warnStream = fs.createWriteStream(path.join(directory, `warn.log`), { flags: "a" });
+  let errorStream = fs.createWriteStream(path.join(directory, `error.log`), { flags: "a" });
+  let fatalStream = fs.createWriteStream(path.join(directory, `fatal.log`), { flags: "a" });
 
   let levelSwitch = () => {
     if (config.bunyan.baseLevel == "") return config.type == "bunyan" ? "warn" : "trace";
@@ -80,5 +81,5 @@ module.exports = (config) => {
 
   let streams = [{ level: levelSwitch(), stream: streamSwitch() }];
 
-  return bunyan.createLogger(u.mapMergeDeep({ streams }, u.mapGetExcept(config.bunyan, "fileBaseDir", "baseLevel")));
+  return bunyan.createLogger(u.mapMergeDeep({ streams }, u.mapGetExcept(config.bunyan, "baseLevel")));
 };

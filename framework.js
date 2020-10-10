@@ -35,7 +35,6 @@ module.exports = class Framework {
         type : "on" | "off" | "bunyan-dev" | "bunyan",
         bunyan : {
           name : string,
-          fileBaseDir: string,
           baseLevel: "trace" | "debug" | "info" | "warn" | "error" | "fatal"
         }
       },
@@ -43,8 +42,11 @@ module.exports = class Framework {
         type: "message" | "filePath" | "function",
         value: string | ((req, res, next) => {}),
       },
+      directories: {
+        logger:string,
+        secret:string,
+      },
       secret: {
-        directory: string,
         filename: string,
         keys: string[],
         additional: {}
@@ -81,7 +83,6 @@ module.exports = class Framework {
           type: "on",
           bunyan: {
             name: "nodeApp",
-            fileBaseDir: process.cwd(),
             baseLevel: "",
           },
         },
@@ -89,8 +90,11 @@ module.exports = class Framework {
           type: "message",
           value: "404 not found",
         },
+        directories: {
+          logger: un.filePathNormalize(__dirname, "../../"),
+          secret: un.filePathNormalize(__dirname, "../../Personal"),
+        },
         secret: {
-          directory: un.filePathNormalize(process.cwd(), "Personal"),
           filename: "config.js",
           keys: ["listen"],
           additional: {
@@ -117,7 +121,7 @@ module.exports = class Framework {
       config
     );
     this.config = config;
-    this.logger = loggerModifier(this.config.logger);
+    this.logger = loggerModifier(this.config);
     this.runtime = {
       scheduler: {},
     };
@@ -186,7 +190,7 @@ module.exports = class Framework {
   run() {
     let task = new tl2();
     task.add("initialization", async () => {
-      this.config = await secretHandle(this.config.secret, this.config);
+      this.config = await secretHandle(this.config);
       this.config.serveStatic.htmlPath.map((i) => this.app.use(express.static(i, { extensions: ["html"] })));
       this.config.serveStatic.filePath.map((i) => this.app.use(express.static(i)));
       this.config.serveStatic.vhost.map((i) => this.app.use(vhost(i.domain, express.static(i.path))));
