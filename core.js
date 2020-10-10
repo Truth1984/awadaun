@@ -11,6 +11,7 @@ const archiver = require("archiver");
 const readline = require("readline");
 const crypto = require("crypto");
 const { spawnSync } = require("child_process");
+const readdir = require("readdirp");
 const conn = require("./conn");
 
 var un = {};
@@ -99,6 +100,21 @@ un.fileMove = async (source, target, mkdir = true, overwrite = true) => {
   target = un.filePathNormalize(target);
   if (mkdir) fse.mkdirpSync(paths.dirname(target));
   return fse.moveSync(source, target, { overwrite });
+};
+
+/**
+ * 
+ * @param {string} path 
+ * @param {{root?: string;
+    fileFilter?: string | string[] | ((entry: EntryInfo) => boolean);
+    directoryFilter?: string | string[] | ((entry: EntryInfo) => boolean);
+    type?: 'files' | 'directories' | 'files_directories' | 'all';
+    lstat?: boolean;
+    depth?: number;
+    alwaysStat?: boolean;}} option 
+ */
+un.fileReaddir = async (path, option) => {
+  return readdir.promise(un.filePathNormalize(path), option);
 };
 
 un.fileWrite = async (content, appendOrNot = false, path, encode = "utf8") => {
