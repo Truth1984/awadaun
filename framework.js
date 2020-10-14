@@ -52,7 +52,10 @@ module.exports = class Framework {
         additional: {}
       },
     }} config
+ * 
  * master controls most of the schedule work
+ * 
+ * un.sql(this.sql)
  */
   constructor(config = {}) {
     this.express = express;
