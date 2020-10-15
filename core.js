@@ -225,6 +225,21 @@ un.fileProcess = (inputPath, outputPath, inputCallback) => {
  */
 un.connRedis = (config) => new conn.Redis(config);
 
-un.sql = conn.SQL;
+/**
+ * 
+ * @param {{
+    client: "mysql" | "postgres" | "mariadb" | "mssql" | "sqlite" | "sqlite::memory",
+    connection:{
+      host: "localhost",
+      user:"",
+      password:"",
+      database:"",
+      port:number
+    }
+  }} config 
+*/
+un.sql = (config, errorLog = u.log, infoLog = u.log) => {
+  return new conn.SQL(config, errorLog, infoLog);
+};
 
 module.exports = un;

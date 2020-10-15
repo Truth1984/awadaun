@@ -74,24 +74,12 @@ class Redis {
 }
 
 class SQL {
-  /**
-   * 
-   * @param {{
-      client: "mysql" | "postgres" | "mariadb" | "mssql" | "sqlite" | "sqlite::memory",
-      connection:{
-        host: "localhost",
-        user:"",
-        password:"",
-        database:"",
-        port:number
-      }
-   }} config 
-   */
   constructor(config, errorLog = u.log, infoLog = u.log) {
     this._conn = knex(config);
     this.sequence = knex(config).queryBuilder();
     this.infoLog = infoLog;
     this.errorLog = errorLog;
+    this._option = config;
   }
 
   _TABLE(tableName) {
@@ -201,22 +189,15 @@ class SQL {
   REST(tableName) {
     // eslint-disable-next-line no-unused-vars
     let wheres = (b = this.sequence) => this.sequence;
-    let builder = () => new SQL(this._option)._TABLE(tableName)._BUILDER();
-    let get = (rangeArr = "*", where = wheres) =>
-      new SQL(this._option)._TABLE(tableName)._SELECT(rangeArr)._WHERE(where)._RUN();
+    let conn = knex(this._option);
+    let builder = () => conn.queryBuilder().from(tableName);
+    let run = (data) => Promise.resolve(data).catch(this.errorLog);
+    let get = (rangeArr = "*", where = wheres) => conn.from(tableName).select(rangeArr).where(where).then(run);
     let getOne = (rangeArr = "*", where = wheres) =>
-      new SQL(this._option)._TABLE(tableName)._SELECT(rangeArr)._WHERE(where)._LIMIT(0, 1)._RUN();
-    let add = (dataPairs) => new SQL(this._option)._TABLE(tableName)._INSERT(dataPairs)._RUN();
-    let set = (dataPairs, where = wheres) =>
-      new SQL(this._option)._TABLE(tableName)._UPDATE(dataPairs)._WHERE(where)._RUN();
-    let has = (where = wheres) =>
-      new SQL(this._option)
-        ._TABLE(tableName)
-        ._SELECT(tableName)
-        ._WHERE(where)
-        ._LIMIT(0, 1)
-        ._RUN()
-        .then((data) => u.len(data) > 0);
+      conn.from(tableName).select(rangeArr).where(where).limit(1).then(run);
+    let add = (dataPairs) => conn.from(tableName).insert(dataPairs).then(run);
+    let set = (dataPairs, where = wheres) => conn.from(tableName).update(dataPairs).where(where).then(run);
+    let has = (where = wheres) => getOne("*", where).then((data) => u.len(data) > 0);
     let hasElseAdd = (dataPairs, where = wheres) =>
       has(where).then((bool) => {
         if (bool) return false;
