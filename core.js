@@ -12,7 +12,8 @@ const readline = require("readline");
 const crypto = require("crypto");
 const { spawnSync } = require("child_process");
 const readdir = require("readdirp");
-const conn = require("./conn");
+const ioredis = require("ioredis");
+const knex = require("knex");
 
 var un = {};
 
@@ -223,7 +224,76 @@ un.fileProcess = (inputPath, outputPath, inputCallback) => {
     cluster: { port: number, host: string }[]
   }} config redis config
  */
-un.connRedis = (config) => new conn.Redis(config);
+un.connRedis = class Redis {
+  constructor(config) {
+    if (u.len(config.cluster) > 0) this.redis = new ioredis.Cluster(config);
+    else this.redis = new ioredis(config);
+  }
+
+  async add(pairs, expireMs = -1) {
+    return Promise.all(
+      u.mapKeys(pairs).map((key) => this.redis.set(key, pairs[key], ...(expireMs != -1 ? ["PX", expireMs] : [])))
+    );
+  }
+
+  async addTilDate(pairs, date = -1) {
+    if (date == -1) return this.add(pairs);
+    return this.add(pairs, new Date(date).getTime() - new Date().getTime());
+  }
+
+  async increment(key, int = 1) {
+    if (int == 1) return this.redis.incr(key);
+    return this.redis.incrby(key, int);
+  }
+
+  async keys(pattern) {
+    return this.redis.keys(pattern);
+  }
+
+  /**
+   * will return null
+   */
+  async get(...keys) {
+    return u.arrayToMap(keys, await this.redis.mget(...keys));
+  }
+
+  /**
+   * @return {Promise<string | null>}
+   */
+  async getPlain(key) {
+    return this.redis.get(key);
+  }
+
+  /**
+   * @return {Promise<string[]>}
+   */
+  async getArray(...keys) {
+    return this.redis.mget(...keys);
+  }
+
+  async getOnce(...keys) {
+    return this.get(...keys).then((data) => this.remove(...keys).then(() => data));
+  }
+
+  async remove(...keys) {
+    if (keys.length > 0) return this.redis.del(...keys);
+  }
+
+  /**
+   * @return {boolean}
+   */
+  async rawSet(...param) {
+    return this.redis.set(...param).then((val) => val === "OK");
+  }
+
+  /**
+   * @return {Promise<boolean>} if already exist, return false
+   */
+  async checkOrSet(key, value, expireMs = -1) {
+    if (expireMs <= -1) return this.rawSet(key, value, "NX");
+    return this.rawSet(key, value, "PX", expireMs, "NX");
+  }
+};
 
 /**
  * 
@@ -238,8 +308,95 @@ un.connRedis = (config) => new conn.Redis(config);
     }
   }} config 
 */
-un.sql = (config, errorLog = u.log, infoLog = u.log) => {
-  return new conn.SQL(config, errorLog, infoLog);
+un.sqldb = (config) => {
+  return knex(config).schema;
+};
+
+/**
+ * 
+ * @param {{
+    client: "mysql" | "postgres" | "mariadb" | "mssql" | "sqlite" | "sqlite::memory",
+    connection:{
+      host: "localhost",
+      user:"",
+      password:"",
+      database:"",
+      port:number
+    }
+  }} config 
+*/
+un.sqlTable = (config, tableName, errorLog = u.log, debug = false, debugLog = u.log) => {
+  let conn = knex(config);
+  let wheres = knex(config).queryBuilder();
+  let builder = () => conn.queryBuilder().from(tableName);
+  let run = debug
+    ? async (sequence) => {
+        let query = sequence.toQuery();
+        let result = await sequence.then((data) => Promise.resolve(data).catch(errorLog));
+        debugLog({ query, result });
+        return result;
+      }
+    : (sequence) => sequence.then((data) => Promise.resolve(data).catch(errorLog));
+
+  let get = (rangeArr = "*", where = wheres) => run(conn.from(tableName).select(rangeArr).where(where));
+  let getOne = (rangeArr = "*", where = wheres) => run(conn.from(tableName).select(rangeArr).where(where).limit(1));
+  /**
+   * @param {{[string]:boolean}} columnDescMap
+   */
+  let getOrder = (rangeArr = "*", where = wheres, columnDescMap) => {
+    //limit ?
+    let holder = conn.from(tableName).select(rangeArr).where(where);
+    u.mapKeys(columnDescMap).map((i) => holder.orderBy(i, columnDescMap[i] ? "desc" : "asc"));
+    return run(holder);
+  };
+  let getPage = (rangeArr = "*", where = wheres, page = 0, pageSize = 50) =>
+    run(
+      conn
+        .from(tableName)
+        .select(rangeArr)
+        .where(where)
+        .limit(pageSize)
+        .offset(page * pageSize)
+    );
+
+  let getCount = (columnResultKeyMap = {}, where = wheres) => {
+    let holder = conn.from(tableName).where(where);
+    for (let i of u.mapKeys(columnResultKeyMap)) holder.count(i, { as: columnResultKeyMap[i] });
+    return run(holder);
+  };
+  let getCountDistinct = (columnResultKeyMap = {}, where = wheres) => {
+    let holder = conn.from(tableName).where(where);
+    for (let i of u.mapKeys(columnResultKeyMap)) holder.countDistinct(i, { as: columnResultKeyMap[i] });
+    return run(holder);
+  };
+  let add = (dataPairs) => run(conn.from(tableName).insert(dataPairs));
+  let set = (dataPairs, where = wheres) => run(conn.from(tableName).update(dataPairs).where(where));
+  let has = (where = wheres) => getOne("*", where).then((data) => u.len(data) > 0);
+  let hasElseAdd = (dataPairs, where = wheres) =>
+    has(where).then((bool) => {
+      if (bool) return false;
+      return add(dataPairs).then(() => true);
+    });
+  let hasSetAdd = (dataPairs, where = wheres) =>
+    has(where).then((bool) => (bool ? set(dataPairs, where) : add(dataPairs)));
+  let raw = (string) => run(conn.raw(string));
+  let name = () => tableName;
+  return {
+    builder,
+    get,
+    getOne,
+    getOrder,
+    getPage,
+    getCount,
+    getCountDistinct,
+    add,
+    set,
+    has,
+    hasElseAdd,
+    hasSetAdd,
+    raw,
+    name,
+  };
 };
 
 module.exports = un;

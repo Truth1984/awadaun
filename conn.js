@@ -195,6 +195,23 @@ class SQL {
     let get = (rangeArr = "*", where = wheres) => conn.from(tableName).select(rangeArr).where(where).then(run);
     let getOne = (rangeArr = "*", where = wheres) =>
       conn.from(tableName).select(rangeArr).where(where).limit(1).then(run);
+    /**
+     * @param {{[string]:boolean}} columnDescMap
+     */
+    let getOrder = (rangeArr = "*", where = wheres, columnDescMap) => {
+      let holder = conn.from(tableName).select(rangeArr).where(where);
+      u.mapKeys(columnDescMap).map((i) => holder.orderBy(i, columnDescMap[i] ? "desc" : "asc"));
+      return holder.then(run);
+    };
+    let getPage = (rangeArr = "*", where = wheres, page = 0, pageSize = 50) =>
+      conn
+        .from(tableName)
+        .select(rangeArr)
+        .where(where)
+        .limit(pageSize)
+        .offset(page * pageSize)
+        .then(run);
+
     let add = (dataPairs) => conn.from(tableName).insert(dataPairs).then(run);
     let set = (dataPairs, where = wheres) => conn.from(tableName).update(dataPairs).where(where).then(run);
     let has = (where = wheres) => getOne("*", where).then((data) => u.len(data) > 0);
@@ -206,7 +223,7 @@ class SQL {
     let hasSetAdd = (dataPairs, where = wheres) =>
       has(where).then((bool) => (bool ? set(dataPairs, where) : add(dataPairs)));
     let name = () => tableName;
-    return { builder, get, getOne, add, set, has, hasElseAdd, hasSetAdd, name };
+    return { builder, get, getOne, getOrder, getPage, add, set, has, hasElseAdd, hasSetAdd, name };
   }
 }
 
