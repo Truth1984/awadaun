@@ -343,10 +343,10 @@ un.sqlTable = (config, tableName, errorLog = u.log, debug = false, debugLog = u.
   /**
    * @param {{[string]:boolean}} columnDescMap
    */
-  let getOrder = (rangeArr = "*", where = wheres, columnDescMap) => {
-    //limit ?
+  let getOrder = (rangeArr = "*", where = wheres, columnDescMap, page, pageSize = 50) => {
     let holder = conn.from(tableName).select(rangeArr).where(where);
     u.mapKeys(columnDescMap).map((i) => holder.orderBy(i, columnDescMap[i] ? "desc" : "asc"));
+    if (page) holder.limit(pageSize).offset(page * pageSize);
     return run(holder);
   };
   let getPage = (rangeArr = "*", where = wheres, page = 0, pageSize = 50) =>
