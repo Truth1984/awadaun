@@ -327,7 +327,8 @@ un.sqldb = (config) => {
 */
 un.sqlTable = (config, tableName, errorLog = u.log, debug = false, debugLog = u.log) => {
   let conn = knex(config);
-  let wheres = knex(config).queryBuilder();
+  // eslint-disable-next-line no-unused-vars
+  let wheres = (b = knex(config).queryBuilder()) => knex(config).queryBuilder();
   let builder = () => conn.queryBuilder().from(tableName);
   let run = debug
     ? async (sequence) => {
