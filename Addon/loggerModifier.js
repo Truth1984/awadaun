@@ -4,15 +4,10 @@ const bunyan = require("bunyan");
 const fs = require("fs");
 const path = require("path");
 const colors = require("colors/safe");
+require("../typedef");
 
 /**
- * @param {{"logger": {
-        type : "on" | "off" | "bunyan-dev" | "bunyan",
-        bunyan : {
-          name : string,
-          baseLevel: "trace" | "debug" | "info" | "warn" | "error" | "fatal"
-        }
-      }}} config 
+ * @param {CoreConfig} config
  */
 module.exports = (config) => {
   let directory = config.directories.logger;

@@ -9,56 +9,18 @@ const schedule = require("node-schedule");
 const tl2 = require("tl2");
 const loggerModifier = require("./Addon/loggerModifier");
 const secretHandle = require("./Addon/secretHandle");
+require("./typedef");
 
 module.exports = class Framework {
   /**
-  * @param {{
-      master:true,
-      serveStatic: {
-        htmlPath:string[],
-        filePath:string[],
-        vhost: {domain:string, path:string}[]
-      },
-      listen:number,
-      schedule: {
-        name:string,
-        pattern:string,
-        operation: () => {}
-      }[],
-      perform:{
-        "pre-process" : [],
-        "process" : [],
-        "post-process" : [],
-        "pre-terminate" : []
-      },
-      logger: {
-        type : "on" | "off" | "bunyan-dev" | "bunyan",
-        bunyan : {
-          name : string,
-          baseLevel: "trace" | "debug" | "info" | "warn" | "error" | "fatal"
-        }
-      },
-      handle404: {
-        type: "message" | "filePath" | "function",
-        value: string | ((req, res, next) => {}),
-      },
-      directories: {
-        logger:string,
-        secret:string,
-      },
-      secret: {
-        filename: string,
-        keys: string[],
-        additional: {}
-      },
-    }} config
- * 
- * master controls most of the schedule work
- * 
- * directories define path for different sections
- * 
- * un.sql(this.sql)
- */
+   * @param {CoreConfig} config
+   *
+   * master controls most of the schedule work
+   *
+   * directories define path for different sections
+   *
+   * un.sql(this.sql)
+   */
   constructor(config = {}) {
     this.express = express;
     this.app = express();
@@ -205,11 +167,11 @@ module.exports = class Framework {
     });
 
     task.add("pre-process", async () => {
-      for (let i of this.config.perform["pre-process"]) await i();
+      for (let i of this.config.perform["pre-process"]) await i(this.config);
     });
 
     task.add("process", async () => {
-      for (let i of this.config.perform["process"]) await i();
+      for (let i of this.config.perform["process"]) await i(this.config);
     });
 
     task.add("wrap-up", async () => {
@@ -225,12 +187,12 @@ module.exports = class Framework {
     });
 
     task.add("post-process", async () => {
-      for (let i of this.config.perform["post-process"]) await i();
+      for (let i of this.config.perform["post-process"]) await i(this.config);
     });
 
     task.add("pre-terminate", () => {
       process.stdin.resume(); //so the program will not close instantly
-      process.on("exit", () => this.config.perform["pre-terminate"].map((i) => i())); //do something when app is closing
+      process.on("exit", () => this.config.perform["pre-terminate"].map((i) => i(this.config))); //do something when app is closing
       process.on("SIGINT", () => process.exit()); //catches ctrl+c event
       // catches "kill pid" (for example: nodemon restart)
       process.on("SIGUSR1", () => process.exit());

@@ -1,13 +1,9 @@
 const un = require("../core");
 const u = require("awadau");
+require("../typedef");
 
 /**
- * 
- * @param {{secret:{
-        filename: string,
-        keys: string[],
-        additional: {}
-    }}} config
+ * @param {CoreConfig} config
  */
 module.exports = (config) => {
   let secretConfig = config.secret;
