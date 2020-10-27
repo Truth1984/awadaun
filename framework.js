@@ -55,6 +55,8 @@ module.exports = class Framework {
  * 
  * master controls most of the schedule work
  * 
+ * directories define path for different sections
+ * 
  * un.sql(this.sql)
  */
   constructor(config = {}) {
