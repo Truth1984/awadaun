@@ -96,7 +96,7 @@ module.exports = class Framework {
           value: "404 not found",
         },
         directories: {
-          logger: un.filePathNormalize(__dirname, "../../"),
+          logger: un.filePathNormalize(__dirname, "../../Logger"),
           secret: un.filePathNormalize(__dirname, "../../Personal"),
         },
         secret: {

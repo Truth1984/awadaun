@@ -37,7 +37,8 @@ module.exports = (config) => {
       fatal: () => {},
     };
   }
-  if (!un.fileIsDir(directory)) throw "directories.logger is not a directory";
+  if (!un.fileIsDir(directory))
+    un.fileMkdir(directory).then(() => un.fileWriteSync("*", true, un.filePathNormalize(directory, ".gitignore")));
 
   let colorSelector = (level) => {
     // trace:10, debug: 20, info: 30, warning: 40, error: 50, fatal: 60
