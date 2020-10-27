@@ -14,6 +14,7 @@ const { spawnSync } = require("child_process");
 const readdir = require("readdirp");
 const ioredis = require("ioredis");
 const knex = require("knex");
+const escapeHtml = require("escape-html");
 
 var un = {};
 
@@ -216,6 +217,8 @@ un.fileProcess = (inputPath, outputPath, inputCallback) => {
   };
   return perform().then(() => new Promise((resolve) => outputStream.end(() => resolve())));
 };
+
+un.escapeHtml = (content) => escapeHtml(content);
 
 /**
  * @param {{
