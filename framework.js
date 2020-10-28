@@ -167,11 +167,11 @@ module.exports = class Framework {
     });
 
     task.add("pre-process", async () => {
-      for (let i of this.config.perform["pre-process"]) await i(this.config);
+      for (let i of this.config.perform["pre-process"]) await i(this);
     });
 
     task.add("process", async () => {
-      for (let i of this.config.perform["process"]) await i(this.config);
+      for (let i of this.config.perform["process"]) await i(this);
     });
 
     task.add("wrap-up", async () => {
@@ -187,12 +187,12 @@ module.exports = class Framework {
     });
 
     task.add("post-process", async () => {
-      for (let i of this.config.perform["post-process"]) await i(this.config);
+      for (let i of this.config.perform["post-process"]) await i(this);
     });
 
     task.add("pre-terminate", () => {
       process.stdin.resume(); //so the program will not close instantly
-      process.on("exit", () => this.config.perform["pre-terminate"].map((i) => i(this.config))); //do something when app is closing
+      process.on("exit", () => this.config.perform["pre-terminate"].map((i) => i(this))); //do something when app is closing
       process.on("SIGINT", () => process.exit()); //catches ctrl+c event
       // catches "kill pid" (for example: nodemon restart)
       process.on("SIGUSR1", () => process.exit());
