@@ -158,16 +158,19 @@ module.exports = class Framework {
     let task = new tl2();
     task.add("initialization", async () => {
       this.config = await secretHandle(this.config);
-      this.config.serveStatic.htmlPath.map((i) => this.app.use(express.static(i, { extensions: ["html"] })));
-      this.config.serveStatic.filePath.map((i) => this.app.use(express.static(i)));
-      this.config.serveStatic.vhost.map((i) => this.app.use(vhost(i.domain, express.static(i.path))));
-
-      this.config.schedule.map((i) => (this.runtime[i.name] = schedule.scheduleJob(i.pattern, i.operation)));
       this.app.get("/health-check", (req, res) => res.status(200).send("OK"));
     });
 
     task.add("pre-process", async () => {
       for (let i of this.config.perform["pre-process"]) await i(this);
+    });
+
+    task.add("pre-process-cont", async () => {
+      this.config.serveStatic.htmlPath.map((i) => this.app.use(express.static(i, { extensions: ["html"] })));
+      this.config.serveStatic.filePath.map((i) => this.app.use(express.static(i)));
+      this.config.serveStatic.vhost.map((i) => this.app.use(vhost(i.domain, express.static(i.path))));
+
+      this.config.schedule.map((i) => (this.runtime[i.name] = schedule.scheduleJob(i.pattern, i.operation)));
     });
 
     task.add("process", async () => {
