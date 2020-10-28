@@ -63,7 +63,7 @@ module.exports = class Framework {
         },
         secret: {
           filename: "config.js",
-          keys: ["listen"],
+          keys: ["master", "listen"],
           additional: {
             redis: {
               enable: false,
