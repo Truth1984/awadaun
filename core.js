@@ -14,7 +14,7 @@ const { spawnSync } = require("child_process");
 const readdir = require("readdirp");
 const ioredis = require("ioredis");
 const knex = require("knex");
-const escapeHtml = require("escape-html");
+const htmlEntities = new (require("html-entities").Html5Entities)();
 
 var un = {};
 
@@ -218,7 +218,9 @@ un.fileProcess = (inputPath, outputPath, inputCallback) => {
   return perform().then(() => new Promise((resolve) => outputStream.end(() => resolve())));
 };
 
-un.escapeHtml = (content) => escapeHtml(content);
+un.escapeHtml = (content) => htmlEntities.encode(content);
+
+un.unescapeHtml = (content) => htmlEntities.decode(content);
 
 /**
  * @param {{
