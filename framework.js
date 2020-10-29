@@ -88,6 +88,9 @@ module.exports = class Framework {
       config
     );
     this.config = config;
+    /**
+     * @type {{trace: (msg: any) => any, debug: (msg: any) => any, info: (msg: any) => any, warn: (msg: any) => any, error: (msg: any) => any, fatal: (msg: any) => any}}
+     */
     this.logger = loggerModifier(this.config);
     this.runtime = {
       scheduler: {},
