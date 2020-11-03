@@ -11,8 +11,13 @@ require("../typedef");
  */
 module.exports = (config) => {
   let directory = config.directories.logger;
-  config = config.logger;
-  if (config.type == "on") {
+  let logconfig = config.logger;
+  if (logconfig.devOverride) {
+    if (config.dev == "full-dev") logconfig.type = "bunyan-dev";
+    if (config.dev == "dev") logconfig.type = "on";
+    if (config.dev == "prod") logconfig.type = "bunyan";
+  }
+  if (logconfig.type == "on") {
     return {
       trace: (msg) => u.log(msg, undefined, "trace"),
       debug: (msg) => u.log(msg, undefined, "debug"),
@@ -22,7 +27,7 @@ module.exports = (config) => {
       fatal: (msg) => u.log(msg, undefined, "fatal"),
     };
   }
-  if (config.type == "off") {
+  if (logconfig.type == "off") {
     return {
       trace: () => {},
       debug: () => {},
@@ -47,12 +52,12 @@ module.exports = (config) => {
   let fatalStream = fs.createWriteStream(path.join(directory, `fatal.log`), { flags: "a" });
 
   let levelSwitch = () => {
-    if (config.bunyan.baseLevel == "") return config.type == "bunyan" ? "warn" : "trace";
-    return config.bunyan.baseLevel;
+    if (logconfig.bunyan.baseLevel == "") return logconfig.type == "bunyan" ? "warn" : "trace";
+    return logconfig.bunyan.baseLevel;
   };
 
   let streamSwitch = () => {
-    if (config.type == "bunyan-dev")
+    if (logconfig.type == "bunyan-dev")
       return {
         write: (entry) => {
           var logObject = JSON.parse(entry);
@@ -77,5 +82,5 @@ module.exports = (config) => {
 
   let streams = [{ level: levelSwitch(), stream: streamSwitch() }];
 
-  return bunyan.createLogger(u.mapMergeDeep({ streams }, u.mapGetExcept(config.bunyan, "baseLevel")));
+  return bunyan.createLogger(u.mapMergeDeep({ streams }, u.mapGetExcept(logconfig.bunyan, "baseLevel")));
 };

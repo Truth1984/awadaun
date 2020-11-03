@@ -33,6 +33,7 @@ module.exports = class Framework {
     config = u.mapMergeDeep(
       {
         master: true,
+        dev: "dev",
         serveStatic: {
           htmlPath: [],
           filePath: [],
@@ -47,6 +48,7 @@ module.exports = class Framework {
           "pre-terminate": [],
         },
         logger: {
+          devOverride: true,
           type: "on",
           bunyan: {
             name: "nodeApp",
