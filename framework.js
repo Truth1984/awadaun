@@ -90,10 +90,19 @@ module.exports = class Framework {
       config
     );
     this.config = config;
+
+    let logger = loggerModifier(this.config);
+    logger.trace = logger.trace.bind(logger);
+    logger.debug = logger.debug.bind(logger);
+    logger.info = logger.info.bind(logger);
+    logger.warn = logger.warn.bind(logger);
+    logger.error = logger.error.bind(logger);
+    logger.fatal = logger.fatal.bind(logger);
+
     /**
      * @type {{trace: (msg: any) => any, debug: (msg: any) => any, info: (msg: any) => any, warn: (msg: any) => any, error: (msg: any) => any, fatal: (msg: any) => any}}
      */
-    this.logger = loggerModifier(this.config);
+    this.logger = logger;
     this.runtime = {
       scheduler: {},
     };
