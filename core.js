@@ -299,6 +299,18 @@ un.connRedis = class Redis {
     if (expireMs <= -1) return this.rawSet(key, value, "NX");
     return this.rawSet(key, value, "PX", expireMs, "NX");
   }
+
+  async mapAdd(setName, ...key) {
+    return this.redis.sadd(setName, ...key);
+  }
+
+  async mapHas(setName, key) {
+    return this.redis.sismember(setName, key);
+  }
+
+  async mapDel(setName, key) {
+    return this.redis.srem(setName, key);
+  }
 };
 
 /**
