@@ -305,7 +305,7 @@ un.connRedis = class Redis {
   }
 
   async mapHas(setName, key) {
-    return this.redis.sismember(setName, key);
+    return this.redis.sismember(setName, key).then((data) => data > 0);
   }
 
   async mapDel(setName, key) {
