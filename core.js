@@ -311,6 +311,10 @@ un.connRedis = class Redis {
   async mapDel(setName, key) {
     return this.redis.srem(setName, key);
   }
+
+  async mapKeys(setName) {
+    return this.redis.smembers(setName);
+  }
 };
 
 /**
