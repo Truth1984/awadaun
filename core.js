@@ -351,20 +351,29 @@ un.sqldb = (config) => {
       port:number
     }
   }} config 
+*
+* @param {{debug:false, debugLog:(data)=>{}, errorHandle:(data)=>{}}} logConfig
 */
-un.sqlTable = (config, tableName, errorLog = u.log, debug = false, debugLog = u.log) => {
+un.sqlTable = (config, tableName, logConfig = {}) => {
   let conn = knex(config);
+  let defaultLogConfig = {
+    debug: false,
+    debugLog: (data) => u.log(data, undefined, "debug"),
+    errorHandle: (data) => u.log(data, undefined, "error"),
+  };
+  logConfig = u.mapMergeDeep(defaultLogConfig, logConfig);
+
   // eslint-disable-next-line no-unused-vars
   let wheres = (b = knex(config).queryBuilder()) => knex(config).queryBuilder();
   let builder = () => conn.queryBuilder().from(tableName);
-  let run = debug
+  let run = logConfig.debug
     ? async (sequence) => {
         let query = sequence.toQuery();
-        let result = await sequence.then((data) => Promise.resolve(data).catch(errorLog));
-        debugLog({ query, result });
+        let result = await sequence.then((data) => data).catch(logConfig.errorHandle);
+        logConfig.debugLog({ query, result });
         return result;
       }
-    : (sequence) => sequence.then((data) => Promise.resolve(data).catch(errorLog));
+    : (sequence) => sequence.then((data) => data).catch(logConfig.errorHandle);
 
   let get = (rangeArr = "*", where = wheres) => run(conn.from(tableName).select(rangeArr).where(where));
   let getOne = (rangeArr = "*", where = wheres) => run(conn.from(tableName).select(rangeArr).where(where).limit(1));
