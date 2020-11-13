@@ -146,6 +146,11 @@ un.fileRead = async (path, encode = "utf8") => {
   return fsp.readFile(path, encode);
 };
 
+un.fileReadSync = (path, encode = "utf8") => {
+  path = un.filePathNormalize(path);
+  return fs.readFileSync(path, encode).toString();
+};
+
 /**
  * @return {Promise<Buffer>}
  */
