@@ -82,5 +82,7 @@ module.exports = (config) => {
 
   let streams = [{ level: levelSwitch(), stream: streamSwitch() }];
 
-  return bunyan.createLogger(u.mapMergeDeep({ streams }, u.mapGetExcept(logconfig.bunyan, "baseLevel")));
+  let bLog = bunyan.createLogger(u.mapMergeDeep({ streams }, u.mapGetExcept(logconfig.bunyan, "baseLevel")));
+  bLog.fields = { time: 0, msg: 1 };
+  return bLog;
 };
