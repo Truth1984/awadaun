@@ -199,13 +199,15 @@ module.exports = class Framework {
         this.app.use((req, res) => res.status(404).sendFile(this.config.handle404.value));
       if (this.config.handle404.type == "function")
         this.app.use((req, res, next) => this.config.handle404.value(req, res, next));
-
-      this.app.listen(this.config.listen, () => this.logger.info(`server listen on http port ${this.config.listen}`));
     });
 
     task.add("post-process", async () => {
       for (let i of this.config.perform["post-process"]) await i(this);
     });
+
+    task.add("listening", async () =>
+      this.app.listen(this.config.listen, () => this.logger.info(`server listen on http port ${this.config.listen}`))
+    );
 
     task.add("pre-terminate", () => {
       process.stdin.resume(); //so the program will not close instantly
