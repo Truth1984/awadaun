@@ -173,6 +173,10 @@ un.fileDownload = async (url, outputPath) => {
 };
 
 un.cmd = async (scripts) => {
+  return un.cmdSync(scripts);
+};
+
+un.cmdSync = (scripts) => {
   let cmdarray = scripts.split(" ");
   return spawnSync(cmdarray.shift(), cmdarray, {
     shell: true,
