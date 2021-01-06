@@ -65,7 +65,7 @@ module.exports = (config) => {
           let result = JSON.stringify(logObject) + "\n";
           if (logObject.level == 40) warnStream.write(result);
           if (logObject.level == 50) errorStream.write(result);
-          if (logObject.level == 60) fatalStream.write(logObject);
+          if (logObject.level == 60) fatalStream.write(result);
           process.stdout.write(colorSelector(logObject.level)(logObject.severity) + "\t" + result);
         },
       };
