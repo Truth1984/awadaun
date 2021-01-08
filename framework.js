@@ -6,6 +6,7 @@ const compression = require("compression");
 const vhost = require("vhost");
 const helmet = require("helmet");
 const schedule = require("node-schedule");
+const cors = require("cors");
 const tl2 = require("tl2");
 const loggerModifier = require("./Addon/loggerModifier");
 const secretHandle = require("./Addon/secretHandle");
@@ -28,6 +29,7 @@ module.exports = class Framework {
     this.app.use(bodyParser.urlencoded({ extended: true }));
     this.app.use(helmet());
     this.app.use(compression());
+    this.app.use(cors());
     this.app.set("trust proxy", 1);
 
     config = u.mapMergeDeep(
