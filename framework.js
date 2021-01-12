@@ -43,6 +43,7 @@ module.exports = class Framework {
           vhost: [],
         },
         listen: process.env.PORT || 8080,
+        envAddition: [],
         schedule: [],
         perform: {
           "pre-process": [],
