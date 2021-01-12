@@ -1,5 +1,9 @@
 utils
 
+## config
+
+env -> overwrite -> secret file -> overwrite -> initial config -> overwrite -> default config
+
 ## procedure
 
 -> require

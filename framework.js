@@ -8,8 +8,9 @@ const helmet = require("helmet");
 const schedule = require("node-schedule");
 const cors = require("cors");
 const tl2 = require("tl2");
-const loggerModifier = require("./Addon/loggerModifier");
+const loggerHandle = require("./Addon/loggerHandle");
 const secretHandle = require("./Addon/secretHandle");
+const envHandle = require("./Addon/envHandle");
 require("./typedef");
 
 module.exports = class Framework {
@@ -93,18 +94,10 @@ module.exports = class Framework {
     );
     this.config = config;
 
-    let logger = loggerModifier(this.config);
-    logger.trace = logger.trace.bind(logger);
-    logger.debug = logger.debug.bind(logger);
-    logger.info = logger.info.bind(logger);
-    logger.warn = logger.warn.bind(logger);
-    logger.error = logger.error.bind(logger);
-    logger.fatal = logger.fatal.bind(logger);
-
     /**
      * @type {{trace: (msg: any) => any, debug: (msg: any) => any, info: (msg: any) => any, warn: (msg: any) => any, error: (msg: any) => any, fatal: (msg: any) => any}}
      */
-    this.logger = logger;
+    this.logger = loggerHandle(this.config);
     this.runtime = {
       scheduler: {},
     };
@@ -174,6 +167,8 @@ module.exports = class Framework {
     let task = new tl2();
     task.add("initialization", async () => {
       this.config = await secretHandle(this.config);
+      this.config = await envHandle(this.config);
+      this.logger = await loggerHandle(this.config);
       this.app.get("/health-check", (req, res) => res.status(200).send("OK"));
     });
 
