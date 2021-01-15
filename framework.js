@@ -104,6 +104,10 @@ module.exports = class Framework {
     };
   }
 
+  addSecretKey(map) {
+    this.config.secret.additional = u.mapMergeDeep(this.config.secret.additional, map);
+  }
+
   serveHTML(path) {
     path = un.filePathNormalize(path);
     this.config.serveStatic.htmlPath.push(path);
