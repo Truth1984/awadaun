@@ -120,6 +120,10 @@ un.fileReaddir = async (path, option) => {
   return readdir.promise(un.filePathNormalize(path), option);
 };
 
+un.fileLatestDir = (path) => {
+  return un.fileIsDir(path) ? path : paths.dirname(path);
+};
+
 un.fileWrite = async (content, appendOrNot = false, path, encode = "utf8") => {
   path = un.filePathNormalize(path);
   return un
