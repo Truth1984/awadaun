@@ -366,8 +366,8 @@ un.sqlTable = (config, tableName, logConfig = {}) => {
   let conn = knex(config);
   let defaultLogConfig = {
     debug: false,
-    debugLog: (data) => u.log(data, undefined, "debug"),
-    errorHandle: (data) => u.log(data, undefined, "error"),
+    debugLog: (data) => u.log(data, { tableName }, "sqlTable", "DEBUG"),
+    errorHandle: (data) => u.log(data, { tableName }, "sqlTable", "ERROR"),
   };
   logConfig = u.mapMergeDeep(defaultLogConfig, logConfig);
 
@@ -443,5 +443,7 @@ un.sqlTable = (config, tableName, logConfig = {}) => {
     name,
   };
 };
+
+un.elasticSearch = (config) => {};
 
 module.exports = un;

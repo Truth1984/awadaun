@@ -19,12 +19,12 @@ module.exports = (config) => {
   }
   if (logconfig.type == "on") {
     return {
-      trace: (msg) => u.log(msg, undefined, "trace"),
-      debug: (msg) => u.log(msg, undefined, "debug"),
-      info: (msg) => u.log(msg, undefined, "info"),
-      warn: (msg) => u.log(msg, undefined, "warn"),
-      error: (msg) => u.log(msg, undefined, "error"),
-      fatal: (msg) => u.log(msg, undefined, "fatal"),
+      trace: (msg) => u.log(msg, {}, undefined, "TRACE"),
+      debug: (msg) => u.log(msg, {}, undefined, "DEBUG"),
+      info: (msg) => u.log(msg, {}, undefined, "INFO"),
+      warn: (msg) => u.log(msg, {}, undefined, "WARN"),
+      error: (msg) => u.log(msg, {}, undefined, "ERROR"),
+      fatal: (msg) => u.log(msg, {}, undefined, "FATAL"),
     };
   }
   if (logconfig.type == "off") {
