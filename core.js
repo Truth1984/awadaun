@@ -15,6 +15,7 @@ const readdir = require("readdirp");
 const ioredis = require("ioredis");
 const knex = require("knex");
 const htmlEntities = new (require("html-entities").Html5Entities)();
+const ElasticSearch = require("elasticsearch");
 
 var un = {};
 
@@ -381,7 +382,7 @@ un.sqlTable = (config, tableName, logConfig = {}) => {
         logConfig.debugLog({ query, result });
         return result;
       }
-    : (sequence) => sequence.then((data) => data).catch(logConfig.errorHandle);
+    : async (sequence) => sequence.then((data) => data).catch(logConfig.errorHandle);
 
   let get = (rangeArr = "*", where = wheres) => run(conn.from(tableName).select(rangeArr).where(where));
   let getOne = (rangeArr = "*", where = wheres) => run(conn.from(tableName).select(rangeArr).where(where).limit(1));
@@ -444,6 +445,55 @@ un.sqlTable = (config, tableName, logConfig = {}) => {
   };
 };
 
-un.elasticSearch = (config) => {};
+/**
+ * @typedef {import('elasticsearch').ConfigOptions} esClientConfig
+ * d`etailed config https://www.elastic.co/guide/en/elasticsearch/client/javascript-api/16.x/config-options.html
+ *
+ * @typedef {import('elasticsearch').ConfigOptions} esClientConfig
+ * @typedef {import('elasticsearch').SearchParams} esSearchParam
+ *
+ * @param {esClientConfig} clientConfig
+ * @param {esSearchParam} searchParam define `index` and `type`
+ * @param {{debug:false, debugLog:(data)=>{}, errorHandle:(data)=>{}}} logConfig
+ */
+un.elasticSearch = (clientConfig = {}, searchParam = {}, logConfig = {}) => {
+  /**
+   * @type esClientConfig
+   */
+  let defaultConfig = {
+    apiVersion: "7.2",
+    host: "localhost:9200",
+    log: "warning",
+  };
+
+  let defaultLogConfig = {
+    debug: false,
+    debugLog: (data) => u.log(data, { searchParam }, "sqlTable", "DEBUG"),
+    errorHandle: (data) => u.log(u.errorHandle(data), { searchParam }, "sqlTable", "ERROR"),
+  };
+  logConfig = u.mapMergeDeep(defaultLogConfig, logConfig);
+
+  let conn = new ElasticSearch.Client(u.mapMerge(defaultConfig, clientConfig));
+
+  let run = logConfig.debug
+    ? async (param = searchParam, action) => {
+        let result = await action.then((data) => data).catch(logConfig.errorHandle);
+        logConfig.debugLog({ param, result });
+        return result.then((data) => (data.hits && data.hits.hits ? data.hits.hits : data));
+      }
+    : // eslint-disable-next-line no-unused-vars
+      async (param = searchParam, action) =>
+        action.then((data) => (data.hits && data.hits.hits ? data.hits.hits : data)).catch(logConfig.errorHandle);
+
+  let get = (range = "*", query) => {
+    let param = { _source: range, q: query };
+    return run(param, conn.search(u.mapMerge(param, searchParam)));
+  };
+
+  return {
+    conn,
+    get,
+  };
+};
 
 module.exports = un;
