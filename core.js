@@ -475,24 +475,32 @@ un.elasticSearch = (clientConfig = {}, searchParam = {}, logConfig = {}) => {
 
   let conn = new ElasticSearch.Client(u.mapMerge(defaultConfig, clientConfig));
 
-  let run = logConfig.debug
+  let runFull = logConfig.debug
     ? async (param = searchParam, action) => {
         let result = await action.then((data) => data).catch(logConfig.errorHandle);
         logConfig.debugLog({ param, result });
-        return result.then((data) => (data.hits && data.hits.hits ? data.hits.hits : data));
+        return result;
       }
     : // eslint-disable-next-line no-unused-vars
-      async (param = searchParam, action) =>
-        action.then((data) => (data.hits && data.hits.hits ? data.hits.hits : data)).catch(logConfig.errorHandle);
+      async (param = searchParam, action) => action.then((data) => data).catch(logConfig.errorHandle);
+
+  let run = (param = searchParam, action) =>
+    runFull(param, action).then((data) => (data.hits && data.hits.hits ? data.hits.hits : data));
 
   let get = (range = "*", query) => {
     let param = { _source: range, q: query };
     return run(param, conn.search(u.mapMerge(param, searchParam)));
   };
 
+  let getFull = (range = "*", query) => {
+    let param = { _source: range, q: query };
+    return runFull(param, conn.search(u.mapMerge(param, searchParam)));
+  };
+
   return {
     conn,
     get,
+    getFull,
   };
 };
 
