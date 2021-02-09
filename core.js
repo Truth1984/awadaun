@@ -389,7 +389,7 @@ un.sqlTable = (config, tableName, logConfig = {}) => {
   /**
    * @param {{[string]:boolean}} columnDescMap
    */
-  let getOrder = (rangeArr = "*", where = wheres, columnDescMap, page, pageSize = 50) => {
+  let getOrder = (rangeArr = "*", where = wheres, columnDescMap = {}, page, pageSize = 50) => {
     let holder = conn.from(tableName).select(rangeArr).where(where);
     u.mapKeys(columnDescMap).map((i) => holder.orderBy(i, columnDescMap[i] ? "desc" : "asc"));
     if (page) holder.limit(pageSize).offset(page * pageSize);
@@ -461,7 +461,7 @@ un.elasticSearch = (clientConfig = {}, searchParam = {}, logConfig = {}) => {
    * @type esClientConfig
    */
   let defaultConfig = {
-    apiVersion: "7.2",
+    apiVersion: "7.x",
     host: "localhost:9200",
     log: "warning",
   };
@@ -471,9 +471,11 @@ un.elasticSearch = (clientConfig = {}, searchParam = {}, logConfig = {}) => {
     debugLog: (data) => u.log(data, { searchParam }, "sqlTable", "DEBUG"),
     errorHandle: (data) => u.log(u.errorHandle(data), { searchParam }, "sqlTable", "ERROR"),
   };
+
+  clientConfig = u.mapMerge(defaultConfig, clientConfig);
   logConfig = u.mapMergeDeep(defaultLogConfig, logConfig);
 
-  let conn = new ElasticSearch.Client(u.mapMerge(defaultConfig, clientConfig));
+  let conn = new ElasticSearch.Client(clientConfig);
 
   let runFull = logConfig.debug
     ? async (param = searchParam, action) => {
@@ -484,23 +486,92 @@ un.elasticSearch = (clientConfig = {}, searchParam = {}, logConfig = {}) => {
     : // eslint-disable-next-line no-unused-vars
       async (param = searchParam, action) => action.then((data) => data).catch(logConfig.errorHandle);
 
-  let run = (param = searchParam, action) =>
-    runFull(param, action).then((data) => (data.hits && data.hits.hits ? data.hits.hits : data));
+  let _filter = (data) => {
+    let result = u.mapGetPath(data, ["hits", "hits"], null);
+    return result ? u.mapValuesPerform(result, (d) => d._source) : data;
+  };
+  let run = (param = searchParam, action) => runFull(param, action).then((data) => _filter(data));
 
   let get = (range = "*", query) => {
-    let param = { _source: range, q: query };
+    let param = { _source: range, q: query, filterPath: "hits.hits._source" };
     return run(param, conn.search(u.mapMerge(param, searchParam)));
   };
 
-  let getFull = (range = "*", query) => {
-    let param = { _source: range, q: query };
-    return runFull(param, conn.search(u.mapMerge(param, searchParam)));
+  let getFull = (range = "*", query) =>
+    runFull({ _source: range, q: query }, conn.search(u.mapMerge({ _source: range, q: query }, searchParam)));
+
+  /**
+   * @param {{[string]:boolean}} columnDescMap
+   */
+  let getOrder = (range = "*", query, columnDescMap = {}, page, pageSize = 20) => {
+    let param = { _source: range, q: query, sort: [] };
+    if (page) param = u.mapMerge(param, { size: pageSize, from: page * pageSize });
+    u.mapKeys(columnDescMap).map((i) =>
+      param.sort.concat({ [i]: { missing: "_last", order: columnDescMap[i] ? "desc" : "asc" } })
+    );
+    return runFull(param, conn.search(u.mapMerge(param, searchParam))).then((result) => {
+      return {
+        total: u.mapGetPath(result, ["hits", "total", "value"], -1),
+        value: _filter(result),
+      };
+    });
   };
+
+  let getPage = (range = "*", query, page = 0, pageSize = 20) => {
+    let param = { _source: range, q: query, size: pageSize, from: page * pageSize };
+    return runFull(param, conn.search(u.mapMerge(param, searchParam))).then((result) => {
+      return {
+        total: u.mapGetPath(result, ["hits", "total", "value"], -1),
+        value: _filter(result),
+      };
+    });
+  };
+
+  // /**
+  //  * Method: POST /${index}/_pit?keep_alive=${time} RETURN {id}
+  //  *
+  //  * GET /_search add {pit:{ ${id}, ${keep_alive} }, sort:[{...}], query: {...} }
+  //  *
+  //  * RETURN { ${pit_id}, hits: {hists:  [?{  _source:... , sort : [number, string] }]  } }
+  //  *
+  //  * GET /_search add {pit:{ ${id}, ${keep_alive} }, sort:[{...}], "search_after":[${time},${segid}] }
+  //  *
+  //  * @param {{[string]:boolean}} columnDescMap better include a primary key, else results could duplicate hits
+  //  * @param {{id:string, time:number, segid: string}} pitInfo
+  //  */
+  // let getPageLong = async (range = "*", query, columnDescMap = {}, pitInfo, alive = "1m") => {
+  //   let param = { _source: range, q: query, sort: [] };
+  //   u.mapKeys(columnDescMap).map((i) =>
+  //     param.sort.concat({ [i]: { missing: "_last", order: columnDescMap[i] ? "desc" : "asc" } })
+  //   );
+
+  //   if (pitInfo) {
+  //     pitInfo = u.stringToJson(pitInfo);
+  //     param = u.mapMerge(param, searchParam, {
+  //       pit: { id: pitInfo.id, keep_alive: alive },
+  //       search_after: [pitInfo.time, pitInfo.segid],
+  //     });
+  //   } else {
+  //     let pitid = await u
+  //       .promiseFetchPost(clientConfig.host + "/" + searchParam.index + "/_pit?keep_alive=" + alive)
+  //       .then((data) => data.id)
+  //       .catch(logConfig.errorHandle);
+  //     param = u.mapMerge(param, searchParam, { pit: { id: pitid, keep_alive: alive } });
+  //   }
+
+  //   return runFull(param, conn.search(param)).then((data) => data);
+  // };
+
+  let name = () => ({ index: searchParam.index, type: searchParam.type });
 
   return {
     conn,
     get,
     getFull,
+    getOrder,
+    getPage,
+    // getPageLong,
+    name,
   };
 };
 
