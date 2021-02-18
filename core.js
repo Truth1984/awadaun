@@ -447,7 +447,7 @@ un.sqlTable = (config, tableName, logConfig = {}) => {
 
 /**
  * @typedef {import('elasticsearch').ConfigOptions} esClientConfig
- * d`etailed config https://www.elastic.co/guide/en/elasticsearch/client/javascript-api/16.x/config-options.html
+ * Detailed config https://www.elastic.co/guide/en/elasticsearch/client/javascript-api/16.x/config-options.html
  *
  * @typedef {import('elasticsearch').ConfigOptions} esClientConfig
  * @typedef {import('elasticsearch').SearchParams} esSearchParam
@@ -509,20 +509,9 @@ un.elasticSearch = (clientConfig = {}, searchParam = {}, logConfig = {}) => {
   /**
    * @param {{[string]:boolean}} columnDescMap
    */
-  let getOrder = (range = "*", query, columnDescMap = {}, page, pageSize = 20) => {
-    let param = { _source: range, q: query, sort: [], size: pageSize };
-    if (page) param = u.mapMerge(param, { from: page * pageSize });
+  let getOrder = (range = "*", query, columnDescMap = {}, page = 0, pageSize = 20) => {
+    let param = { _source: range, q: query, sort: [], size: pageSize, from: page * pageSize };
     u.mapKeys(columnDescMap).map((i) => param.sort.push(`${i}:${columnDescMap[i] ? "desc" : "asc"}`));
-    return runFull(param, conn.search(u.mapMerge(param, searchParam))).then((result) => {
-      return {
-        total: u.mapGetPath(result, ["hits", "total"], -1),
-        value: _filter(result),
-      };
-    });
-  };
-
-  let getPage = (range = "*", query, page = 0, pageSize = 20) => {
-    let param = { _source: range, q: query, size: pageSize, from: page * pageSize };
     return runFull(param, conn.search(u.mapMerge(param, searchParam))).then((result) => {
       return {
         total: u.mapGetPath(result, ["hits", "total"], -1),
@@ -536,7 +525,7 @@ un.elasticSearch = (clientConfig = {}, searchParam = {}, logConfig = {}) => {
    * @param {{[string]:boolean}} columnDescMap better include a primary key, else results could duplicate hits
    * @param {{id:string, seg:number|string}} pitInfo pass value[x]._sort to seg
    */
-  let getPageLong = async (range = "*", query, columnDescMap = {}, pitInfo, pageSize = 20, alive = "30m") => {
+  let getPage = async (range = "*", query, columnDescMap = {}, pitInfo, pageSize = 20, alive = "10m") => {
     let param = {
       _source: range,
       q: query,
@@ -580,7 +569,6 @@ un.elasticSearch = (clientConfig = {}, searchParam = {}, logConfig = {}) => {
     getFull,
     getOrder,
     getPage,
-    getPageLong,
     name,
   };
 };
