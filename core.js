@@ -446,7 +446,6 @@ un.sqlTable = (config, tableName, logConfig = {}) => {
 };
 
 /**
- * @typedef {import('elasticsearch').ConfigOptions} esClientConfig
  * Detailed config https://www.elastic.co/guide/en/elasticsearch/client/javascript-api/16.x/config-options.html
  *
  * @typedef {import('elasticsearch').ConfigOptions} esClientConfig
