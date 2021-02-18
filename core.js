@@ -490,6 +490,12 @@ un.elasticSearch = (clientConfig = {}, searchParam = {}, logConfig = {}) => {
     let result = u.mapGetPath(data, ["hits", "hits"], null);
     return result ? u.mapValuesPerform(result, (d) => d._source) : data;
   };
+
+  let _filterSeg = (data) => {
+    let result = u.mapGetPath(data, ["hits", "hits"], null);
+    return result ? u.mapValuesPerform(result, (d) => u.mapMerge(d._source, { _sort: d.sort })) : data;
+  };
+
   let run = (param = searchParam, action) => runFull(param, action).then((data) => _filter(data));
 
   let get = (range = "*", query) => {
@@ -504,14 +510,12 @@ un.elasticSearch = (clientConfig = {}, searchParam = {}, logConfig = {}) => {
    * @param {{[string]:boolean}} columnDescMap
    */
   let getOrder = (range = "*", query, columnDescMap = {}, page, pageSize = 20) => {
-    let param = { _source: range, q: query, sort: [] };
-    if (page) param = u.mapMerge(param, { size: pageSize, from: page * pageSize });
-    u.mapKeys(columnDescMap).map((i) =>
-      param.sort.concat({ [i]: { missing: "_last", order: columnDescMap[i] ? "desc" : "asc" } })
-    );
+    let param = { _source: range, q: query, sort: [], size: pageSize };
+    if (page) param = u.mapMerge(param, { from: page * pageSize });
+    u.mapKeys(columnDescMap).map((i) => param.sort.push(`${i}:${columnDescMap[i] ? "desc" : "asc"}`));
     return runFull(param, conn.search(u.mapMerge(param, searchParam))).then((result) => {
       return {
-        total: u.mapGetPath(result, ["hits", "total", "value"], -1),
+        total: u.mapGetPath(result, ["hits", "total"], -1),
         value: _filter(result),
       };
     });
@@ -521,46 +525,52 @@ un.elasticSearch = (clientConfig = {}, searchParam = {}, logConfig = {}) => {
     let param = { _source: range, q: query, size: pageSize, from: page * pageSize };
     return runFull(param, conn.search(u.mapMerge(param, searchParam))).then((result) => {
       return {
-        total: u.mapGetPath(result, ["hits", "total", "value"], -1),
+        total: u.mapGetPath(result, ["hits", "total"], -1),
         value: _filter(result),
       };
     });
   };
 
-  // /**
-  //  * Method: POST /${index}/_pit?keep_alive=${time} RETURN {id}
-  //  *
-  //  * GET /_search add {pit:{ ${id}, ${keep_alive} }, sort:[{...}], query: {...} }
-  //  *
-  //  * RETURN { ${pit_id}, hits: {hists:  [?{  _source:... , sort : [number, string] }]  } }
-  //  *
-  //  * GET /_search add {pit:{ ${id}, ${keep_alive} }, sort:[{...}], "search_after":[${time},${segid}] }
-  //  *
-  //  * @param {{[string]:boolean}} columnDescMap better include a primary key, else results could duplicate hits
-  //  * @param {{id:string, time:number, segid: string}} pitInfo
-  //  */
-  // let getPageLong = async (range = "*", query, columnDescMap = {}, pitInfo, alive = "1m") => {
-  //   let param = { _source: range, q: query, sort: [] };
-  //   u.mapKeys(columnDescMap).map((i) =>
-  //     param.sort.concat({ [i]: { missing: "_last", order: columnDescMap[i] ? "desc" : "asc" } })
-  //   );
+  /**
+   *
+   * @param {{[string]:boolean}} columnDescMap better include a primary key, else results could duplicate hits
+   * @param {{id:string, seg:number|string}} pitInfo pass value[x]._sort to seg
+   */
+  let getPageLong = async (range = "*", query, columnDescMap = {}, pitInfo, pageSize = 20, alive = "30m") => {
+    let param = {
+      _source: range,
+      q: query,
+      sort: [],
+      filterPath: ["hits.hits._source", "hits.hits.sort", "pit_id", "hits.total"],
+    };
+    u.mapKeys(columnDescMap).map((i) => param.sort.push(`${i}:${columnDescMap[i] ? "desc" : "asc"}`));
 
-  //   if (pitInfo) {
-  //     pitInfo = u.stringToJson(pitInfo);
-  //     param = u.mapMerge(param, searchParam, {
-  //       pit: { id: pitInfo.id, keep_alive: alive },
-  //       search_after: [pitInfo.time, pitInfo.segid],
-  //     });
-  //   } else {
-  //     let pitid = await u
-  //       .promiseFetchPost(clientConfig.host + "/" + searchParam.index + "/_pit?keep_alive=" + alive)
-  //       .then((data) => data.id)
-  //       .catch(logConfig.errorHandle);
-  //     param = u.mapMerge(param, searchParam, { pit: { id: pitid, keep_alive: alive } });
-  //   }
+    if (pitInfo) {
+      pitInfo = u.stringToJson(pitInfo);
+      param = u.mapMerge(param, searchParam, {
+        size: pageSize,
+        body: {
+          pit: { id: pitInfo.id, keep_alive: alive },
+          search_after: pitInfo.seg,
+        },
+      });
+    } else {
+      let pitid = await u
+        .promiseFetchPost(clientConfig.host + "/" + searchParam.index + "/_pit?keep_alive=" + alive)
+        .then((data) => data.id)
+        .catch(logConfig.errorHandle);
+      param = u.mapMerge(param, searchParam, { size: pageSize, body: { pit: { id: pitid, keep_alive: alive } } });
+    }
 
-  //   return runFull(param, conn.search(param)).then((data) => data);
-  // };
+    delete param.index;
+    return runFull(param, conn.search(param)).then((data) => {
+      return {
+        pit: data.pit_id,
+        total: u.mapGetPath(data, ["hits", "total"]),
+        value: _filterSeg(data),
+      };
+    });
+  };
 
   let name = () => ({ index: searchParam.index, type: searchParam.type });
 
@@ -570,7 +580,7 @@ un.elasticSearch = (clientConfig = {}, searchParam = {}, logConfig = {}) => {
     getFull,
     getOrder,
     getPage,
-    // getPageLong,
+    getPageLong,
     name,
   };
 };
