@@ -463,7 +463,7 @@ un.elasticSearch = (clientConfig = {}, searchParam = {}, logConfig = {}) => {
   let defaultConfig = {
     apiVersion: "7.x",
     host: "localhost:9200",
-    log: "warning",
+    log: "warning", // may change clientConfig.log to `trace` for more info
   };
 
   let defaultLogConfig = {
@@ -552,6 +552,7 @@ un.elasticSearch = (clientConfig = {}, searchParam = {}, logConfig = {}) => {
     }
 
     delete param.index;
+
     return runFull(param, conn.search(param)).then((data) => {
       return {
         pit: data.pit_id,
