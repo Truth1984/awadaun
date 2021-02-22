@@ -452,7 +452,7 @@ un.sqlTable = (config, tableName, logConfig = {}) => {
  * @typedef {import('elasticsearch').SearchParams} esSearchParam
  *
  * @param {esClientConfig} clientConfig
- * @param {esSearchParam} searchParam define `index` and `type`
+ * @param {esSearchParam} searchParam define `index`, index is like tableName
  * @param {{debug:false, debugLog:(data)=>{}, errorHandle:(data)=>{}}} logConfig
  */
 un.elasticSearch = (clientConfig = {}, searchParam = {}, logConfig = {}) => {
@@ -475,6 +475,7 @@ un.elasticSearch = (clientConfig = {}, searchParam = {}, logConfig = {}) => {
   logConfig = u.mapMergeDeep(defaultLogConfig, logConfig);
 
   let conn = new ElasticSearch.Client(clientConfig);
+  let index = searchParam.index;
 
   let runFull = logConfig.debug
     ? async (param = searchParam, action) => {
@@ -544,7 +545,7 @@ un.elasticSearch = (clientConfig = {}, searchParam = {}, logConfig = {}) => {
       });
     } else {
       let pitid = await u
-        .promiseFetchPost(clientConfig.host + "/" + searchParam.index + "/_pit?keep_alive=" + alive)
+        .promiseFetchPost(clientConfig.host + "/" + index + "/_pit?keep_alive=" + alive)
         .then((data) => data.id)
         .catch(logConfig.errorHandle);
       param = u.mapMerge(param, searchParam, { size: pageSize, body: { pit: { id: pitid, keep_alive: alive } } });
@@ -561,7 +562,33 @@ un.elasticSearch = (clientConfig = {}, searchParam = {}, logConfig = {}) => {
     });
   };
 
-  let name = () => ({ index: searchParam.index, type: searchParam.type });
+  /** join: the id can be TABLE_A_ID:TABLE_B_ID */
+  let add = (dataPairs, id) => runFull({ index, id, body: dataPairs }, conn.create({ index, id, body: dataPairs }));
+
+  let set = (dataPairs, id) =>
+    runFull({ index, id, body: { doc: dataPairs } }, conn.update({ index, id, body: { doc: dataPairs } }));
+
+  let has = (id) => runFull({ index, id }, conn.exists({ index, id }));
+
+  let hasElseAdd = (dataPairs, id) =>
+    has(id).then((bool) => {
+      if (!bool) add(dataPairs, id);
+    });
+
+  let hasElseSet = (dataPairs, id) =>
+    has(id).then((bool) => {
+      if (!bool) set(dataPairs, id);
+    });
+
+  let name = () => ({ index });
+
+  let addition = {};
+  addition.tableList = (pattern = "*") => runFull({ index: pattern }, conn.indices.get({ index: pattern }));
+  addition.tableDelete = (index) => runFull({ index }, conn.indices.delete({ index }));
+  addition.tableHas = (index) => runFull({ index }, conn.indices.exists({ index }));
+  addition.recordDelete = (id, index = index) => runFull({ index, id }, conn.delete({ index, id }));
+  addition.indexColumn = (index) =>
+    runFull({ index, fields: "*" }, conn.indices.getFieldMapping({ index, fields: "*" }));
 
   return {
     conn,
@@ -569,7 +596,13 @@ un.elasticSearch = (clientConfig = {}, searchParam = {}, logConfig = {}) => {
     getFull,
     getOrder,
     getPage,
+    add,
+    set,
+    has,
+    hasElseAdd,
+    hasElseSet,
     name,
+    addition,
   };
 };
 
