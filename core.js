@@ -572,12 +572,14 @@ un.elasticSearch = (clientConfig = {}, searchParam = {}, logConfig = {}) => {
 
   let hasElseAdd = (dataPairs, id) =>
     has(id).then((bool) => {
-      if (!bool) add(dataPairs, id);
+      if (bool) return false;
+      return add(dataPairs, id).then(() => true);
     });
 
   let hasElseSet = (dataPairs, id) =>
     has(id).then((bool) => {
-      if (!bool) set(dataPairs, id);
+      if (bool) return false;
+      if (!bool) return set(dataPairs, id).then(() => true);
     });
 
   let name = () => ({ index });
