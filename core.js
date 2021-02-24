@@ -493,6 +493,7 @@ un.sqlTable = (config, tableName, logConfig = {}) => {
       conn
         .from(tableName)
         .update(await dateAutoOp(dataPairs, "update"))
+        .where(...(await whereAuto()))
         .where(where)
     );
   let has = (where = wheres) => getOne("*", where).then((data) => u.len(data) > 0);
