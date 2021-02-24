@@ -372,6 +372,46 @@ un.sqlTable = (config, tableName, logConfig = {}) => {
   };
   logConfig = u.mapMergeDeep(defaultLogConfig, logConfig);
 
+  let columnRecorder = Promise.resolve().then(() => {
+    if (!tableName) return {};
+    return conn
+      .from(tableName)
+      .columnInfo()
+      .then((info) => {
+        let cr = {};
+        for (let i of u.mapKeys(info)) {
+          let inspect = (name) => u.contains(i.toLowerCase(), name);
+          if (info[i].type == "datetime") {
+            if (inspect("create")) cr.createAt = i;
+            if (inspect("update")) cr.updateAt = i;
+            if (inspect("delete")) cr.deleteAt = i;
+          }
+        }
+        return cr;
+      });
+  });
+
+  /** @param {"create"|"update"|"delete"} op */
+  let dateAutoOp = (dataPairs, op) => {
+    if (op == "create")
+      return columnRecorder.then((cr) => {
+        if (cr.createAt) dataPairs = u.mapMerge({ [cr.createAt]: new Date() }, dataPairs);
+        return dataPairs;
+      });
+
+    if (op == "update")
+      return columnRecorder.then((cr) => {
+        if (cr.updateAt) dataPairs = u.mapMerge({ [cr.updateAt]: new Date() }, dataPairs);
+        return dataPairs;
+      });
+
+    if (op == "delete")
+      return columnRecorder.then((cr) => {
+        if (cr.deleteAt) dataPairs = u.mapMerge({ [cr.deleteAt]: new Date() }, dataPairs);
+        return dataPairs;
+      });
+  };
+
   // eslint-disable-next-line no-unused-vars
   let wheres = (b = knex(config).queryBuilder()) => knex(config).queryBuilder();
   let builder = () => conn.queryBuilder().from(tableName);
@@ -384,39 +424,77 @@ un.sqlTable = (config, tableName, logConfig = {}) => {
       }
     : async (sequence) => sequence.then((data) => data).catch(logConfig.errorHandle);
 
-  let get = (rangeArr = "*", where = wheres) => run(conn.from(tableName).select(rangeArr).where(where));
-  let getOne = (rangeArr = "*", where = wheres) => run(conn.from(tableName).select(rangeArr).where(where).limit(1));
-  /**
-   * @param {{[string]:boolean}} columnDescMap
-   */
-  let getOrder = (rangeArr = "*", where = wheres, columnDescMap = {}, page, pageSize = 50) => {
-    let holder = conn.from(tableName).select(rangeArr).where(where);
-    u.mapKeys(columnDescMap).map((i) => holder.orderBy(i, columnDescMap[i] ? "desc" : "asc"));
-    if (page) holder.limit(pageSize).offset(page * pageSize);
-    return run(holder);
+  let whereAuto = async () => {
+    let delKey = (await columnRecorder).deleteAt;
+    if (delKey) return [delKey, null];
+    return [{}];
   };
-  let getPage = (rangeArr = "*", where = wheres, page = 0, pageSize = 50) =>
+
+  let get = async (rangeArr = "*", where = wheres) =>
     run(
       conn
         .from(tableName)
         .select(rangeArr)
+        .where(...(await whereAuto()))
+        .where(where)
+    );
+  let getOne = async (rangeArr = "*", where = wheres) =>
+    run(
+      conn
+        .from(tableName)
+        .select(rangeArr)
+        .where(...(await whereAuto()))
+        .where(where)
+        .limit(1)
+    );
+  /**
+   * @param {{[string]:boolean}} columnDescMap
+   */
+  let getOrder = async (rangeArr = "*", where = wheres, columnDescMap = {}, page, pageSize = 50) => {
+    let holder = conn
+      .from(tableName)
+      .select(rangeArr)
+      .where(...(await whereAuto()))
+      .where(where);
+    u.mapKeys(columnDescMap).map((i) => holder.orderBy(i, columnDescMap[i] ? "desc" : "asc"));
+    if (page) holder.limit(pageSize).offset(page * pageSize);
+    return run(holder);
+  };
+  let getPage = async (rangeArr = "*", where = wheres, page = 0, pageSize = 50) =>
+    run(
+      conn
+        .from(tableName)
+        .select(rangeArr)
+        .where(...(await whereAuto()))
         .where(where)
         .limit(pageSize)
         .offset(page * pageSize)
     );
 
-  let getCount = (columnResultKeyMap = {}, where = wheres) => {
-    let holder = conn.from(tableName).where(where);
+  let getCount = async (columnResultKeyMap = {}, where = wheres) => {
+    let holder = conn
+      .from(tableName)
+      .where(...(await whereAuto()))
+      .where(where);
     for (let i of u.mapKeys(columnResultKeyMap)) holder.count(i, { as: columnResultKeyMap[i] });
     return run(holder);
   };
-  let getCountDistinct = (columnResultKeyMap = {}, where = wheres) => {
-    let holder = conn.from(tableName).where(where);
+  let getCountDistinct = async (columnResultKeyMap = {}, where = wheres) => {
+    let holder = conn
+      .from(tableName)
+      .where(...(await whereAuto()))
+      .where(where);
     for (let i of u.mapKeys(columnResultKeyMap)) holder.countDistinct(i, { as: columnResultKeyMap[i] });
     return run(holder);
   };
-  let add = (dataPairs) => run(conn.from(tableName).insert(dataPairs));
-  let set = (dataPairs, where = wheres) => run(conn.from(tableName).update(dataPairs).where(where));
+  let add = async (dataPairs) => run(conn.from(tableName).insert(await dateAutoOp(dataPairs, "create")));
+  let set = async (dataPairs, where = wheres) =>
+    run(
+      conn
+        .from(tableName)
+        .update(await dateAutoOp(dataPairs, "update"))
+        .where(where)
+    );
   let has = (where = wheres) => getOne("*", where).then((data) => u.len(data) > 0);
   let hasElseAdd = (dataPairs, where = wheres) =>
     has(where).then((bool) => {
@@ -425,6 +503,13 @@ un.sqlTable = (config, tableName, logConfig = {}) => {
     });
   let hasSetAdd = (dataPairs, where = wheres) =>
     has(where).then((bool) => (bool ? set(dataPairs, where) : add(dataPairs)));
+  let delSoft = async (where = wheres) =>
+    run(
+      conn
+        .from(tableName)
+        .update(await dateAutoOp({}, "delete"))
+        .where(where)
+    );
   let raw = (string) => run(conn.raw(string));
   let name = () => tableName;
   return {
@@ -440,6 +525,7 @@ un.sqlTable = (config, tableName, logConfig = {}) => {
     has,
     hasElseAdd,
     hasSetAdd,
+    delSoft,
     raw,
     name,
   };
