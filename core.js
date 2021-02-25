@@ -170,10 +170,17 @@ un.fileDelete = async (path, trash = false) => {
   return fsp.unlink(path);
 };
 
-un.fileDownload = async (url, outputPath) => {
+/**
+ *
+ * @typedef {import('download').DownloadOptions} DownloadOptions
+ * @param {string} url
+ * @param {string} outputPath
+ * @param {DownloadOptions} opt
+ */
+un.fileDownload = async (url, outputPath, opt = {}) => {
   url = u.url(url);
   outputPath = un.filePathNormalize(outputPath);
-  let stream = download(url).pipe(fs.createWriteStream(outputPath));
+  let stream = download(url, undefined, opt).pipe(fs.createWriteStream(outputPath));
   return new Promise((resolve) => stream.on("close", () => resolve(true)));
 };
 
