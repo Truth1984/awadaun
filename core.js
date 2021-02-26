@@ -243,15 +243,15 @@ un.escapeHtml = (content) => htmlEntities.encode(content);
 
 un.unescapeHtml = (content) => htmlEntities.decode(content);
 
-/**
- * @param {{
+un.connRedis = class Redis {
+  /**
+   * @param {{
     port: 6379,
     host: "localhost",
     password: "",
     cluster: { port: number, host: string }[]
   }} config redis config
- */
-un.connRedis = class Redis {
+   */
   constructor(config) {
     if (u.len(config.cluster) > 0) this.redis = new ioredis.Cluster(config);
     else this.redis = new ioredis(config);
