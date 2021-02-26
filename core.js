@@ -249,6 +249,7 @@ un.connRedis = class Redis {
     port: 6379,
     host: "localhost",
     password: "",
+    keyPrefix: ?string,
     cluster: { port: number, host: string }[]
   }} config redis config
    */
