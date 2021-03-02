@@ -184,7 +184,7 @@ un.fileDownload = async (url, outputPath, opt = {}) => {
   let dobj = download(url, undefined, opt);
   let headers;
   dobj.on("response", (res) => (headers = Promise.resolve(res.headers)));
-  let stream = download(url, undefined, opt).pipe(fs.createWriteStream(outputPath));
+  let stream = dobj.pipe(fs.createWriteStream(outputPath));
   return new Promise((resolve, reject) => {
     stream.on("close", () => resolve(headers));
     stream.on("error", (e) => reject(e));
