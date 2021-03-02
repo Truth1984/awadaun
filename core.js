@@ -176,12 +176,19 @@ un.fileDelete = async (path, trash = false) => {
  * @param {string} url
  * @param {string} outputPath
  * @param {DownloadOptions} opt
+ * @return {Promise<{}>} headers
  */
 un.fileDownload = async (url, outputPath, opt = {}) => {
   url = u.url(url);
   outputPath = un.filePathNormalize(outputPath);
+  let dobj = download(url, undefined, opt);
+  let headers;
+  dobj.on("response", (res) => (headers = Promise.resolve(res.headers)));
   let stream = download(url, undefined, opt).pipe(fs.createWriteStream(outputPath));
-  return new Promise((resolve) => stream.on("close", () => resolve(true)));
+  return new Promise((resolve, reject) => {
+    stream.on("close", () => resolve(headers));
+    stream.on("error", (e) => reject(e));
+  });
 };
 
 un.cmd = async (scripts) => {
