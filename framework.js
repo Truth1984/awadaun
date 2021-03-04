@@ -207,9 +207,11 @@ module.exports = class Framework {
       for (let i of this.config.perform["post-process"]) await i(this);
     });
 
-    task.add("listening", async () =>
-      this.app.listen(this.config.listen, () => this.logger.info(`server listen on http port ${this.config.listen}`))
-    );
+    task.add("listening", async () => {
+      this.server = this.app.listen(this.config.listen, () =>
+        this.logger.info(`server listen on http port ${this.config.listen}`)
+      );
+    });
 
     task.add("pre-terminate", () => {
       process.stdin.resume(); //so the program will not close instantly

@@ -1,6 +1,6 @@
 {
   "name": "backend-core",
-  "version": "2.3.10",
+  "version": "2.3.11",
   "main": "index.js",
   "description": "utils",
   "scripts": {
