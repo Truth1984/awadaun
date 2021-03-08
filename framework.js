@@ -28,7 +28,7 @@ module.exports = class Framework {
     this.app = express();
     this.app.use(bodyParser.json({ type: "application/json" }));
     this.app.use(bodyParser.urlencoded({ extended: true }));
-    this.app.use(helmet());
+    this.app.use(helmet({ contentSecurityPolicy: { reportOnly: true } }));
     this.app.use(compression());
     this.app.use(cors());
     this.app.set("trust proxy", 1);
