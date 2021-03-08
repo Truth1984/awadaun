@@ -44,6 +44,6 @@ env -> overwrite -> secret file -> overwrite -> initial config -> overwrite -> d
 
 -> sys - listenOnPort
 
--> sys - post-server
+-> sys - socket
 
 -> user -> perform["pre-terminate"] (only run once before app terminates)
