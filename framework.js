@@ -67,6 +67,10 @@ module.exports = class Framework {
           logger: un.filePathNormalize(__dirname, "../../Logger"),
           secret: un.filePathNormalize(__dirname, "../../Personal"),
         },
+        socket: {
+          serverOption: {},
+          ioserver: null,
+        },
         secret: {
           filename: "config.js",
           keys: ["master", "listen"],
@@ -168,6 +172,17 @@ module.exports = class Framework {
     this.config.perform[level].push(operation);
   }
 
+  /**
+   * @typedef {import('socket.io').ServerOptions} SocketServerOptions
+   * @typedef {import('socket.io').Server} SocketServer
+   * @param {Partial<SocketServerOptions>} serverOpt
+   * @param {(io:SocketServer)=>{}} sserver
+   */
+  socketIO(serverOpt, sserver) {
+    this.config.socket.serverOption = serverOpt;
+    this.config.socket.ioserver = sserver;
+  }
+
   run() {
     let task = new tl2();
     task.add("initialization", async () => {
@@ -211,6 +226,14 @@ module.exports = class Framework {
       this.server = this.app.listen(this.config.listen, () =>
         this.logger.info(`server listen on http port ${this.config.listen}`)
       );
+    });
+
+    task.add("socket", async () => {
+      if (this.config.socket.ioserver) {
+        const Socket = require("socket.io");
+        this.config.socket.io = new Socket.Server(this.server, this.config.socket.serverOption);
+        return this.config.socket.ioserver(this.config.socket.io);
+      }
     });
 
     task.add("pre-terminate", () => {

@@ -9,6 +9,7 @@
  * @property {{"pre-process" : [],"process" : [],"post-process" : [],"pre-terminate" : []}} perform
  * @property {{devOverride:true, type : "on" | "off" | "bunyan-dev" | "bunyan", bunyan : { name : string, baseLevel: "trace" | "debug" | "info" | "warn" | "error" | "fatal" }}} logger
  * @property {{type: "message" | "filePath" | "function", value: string | ((req, res, next) => {}),}} handle404
+ * @property {{serverOption:{}, ioserver:()=>{}, io: any}} socket
  * @property {{logger:string, secret:string,}} directories
  * @property {{filename: string, keys: string[], additional: {}}} secret
  */
