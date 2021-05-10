@@ -69,10 +69,15 @@ un.filePathNormalize = (...path) =>
 
 un.filePathAnalyze = (...path) => {
   path = un.filePathNormalize(...path);
+  let full = paths.resolve(path);
   return {
     dirname: paths.dirname(path),
     current: path,
-    full: paths.resolve(path),
+    full: {
+      current: full,
+      dirname: paths.dirname(full),
+      basename: paths.basename(full),
+    },
     basename: paths.basename(path),
     ext: paths.extname(path),
   };
