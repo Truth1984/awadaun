@@ -67,6 +67,17 @@ un.textEncryptBase64 = (text, encrypting = true) => {
 un.filePathNormalize = (...path) =>
   u.stringReplace(paths.normalize(paths.join(...path)), { "~": process.env.HOME, "\\\\\\\\": "/", "\\\\": "/" });
 
+un.filePathAnalyze = (...path) => {
+  path = un.filePathNormalize(...path);
+  return {
+    dirname: paths.dirname(path),
+    current: path,
+    full: paths.resolve(path),
+    basename: paths.basename(path),
+    ext: paths.extname(path),
+  };
+};
+
 un.fileExist = (path) => {
   path = un.filePathNormalize(path);
   return fs.existsSync(path);
@@ -190,6 +201,8 @@ un.fileDownload = async (url, outputPath, opt = {}) => {
     stream.on("error", (e) => reject(e));
   });
 };
+
+un.fileStat = (path) => fs.statSync(un.filePathNormalize(path));
 
 un.cmd = async (scripts) => {
   return un.cmdSync(scripts);
