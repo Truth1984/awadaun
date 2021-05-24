@@ -173,14 +173,13 @@ module.exports = class Framework {
   }
 
   /**
-   * @typedef {import('socket.io').ServerOptions} SocketServerOptions
-   * @typedef {import('socket.io').Server} SocketServer
-   * @param {Partial<SocketServerOptions>} serverOpt
+   * @typedef {import('ws').ServerOptions} SocketServerOptions
+   * @typedef {import('ws').Server} SocketServer
+   * @param {SocketServerOptions} serverOpt
    * @param {(io:SocketServer)=>{}} sserver
    *
-   * use `socket.io-client` npm package to connect to server
    */
-  socketIO(serverOpt, sserver) {
+  webSocket(serverOpt, sserver) {
     this.config.socket.serverOption = serverOpt;
     this.config.socket.ioserver = sserver;
   }
@@ -232,8 +231,10 @@ module.exports = class Framework {
 
     task.add("socket", async () => {
       if (this.config.socket.ioserver) {
-        const Socket = require("socket.io");
-        this.config.socket.io = new Socket.Server(this.server, this.config.socket.serverOption);
+        const WebSocket = require("ws");
+        this.config.socket.io = new WebSocket.Server(
+          u.mapMerge({ server: this.server }, this.config.socket.serverOption)
+        );
         return this.config.socket.ioserver(this.config.socket.io);
       }
     });
