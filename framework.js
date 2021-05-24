@@ -177,6 +177,8 @@ module.exports = class Framework {
    * @typedef {import('socket.io').Server} SocketServer
    * @param {Partial<SocketServerOptions>} serverOpt
    * @param {(io:SocketServer)=>{}} sserver
+   *
+   * use `socket.io-client` npm package to connect to server
    */
   socketIO(serverOpt, sserver) {
     this.config.socket.serverOption = serverOpt;
