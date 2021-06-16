@@ -115,6 +115,12 @@ un.fileMkdir = (path, recursive = true) => {
   return fsp.mkdir(path, { recursive });
 };
 
+un.fileMkdirTouch = (path, recursive = true) => {
+  return un.fileMkdir(paths.dirname(path), recursive).then((bool) => {
+    if (bool !== true) return un.fileWrite("", false, path);
+  });
+};
+
 un.fileMove = async (source, target, mkdir = true, overwrite = true) => {
   source = un.filePathNormalize(source);
   target = un.filePathNormalize(target);
