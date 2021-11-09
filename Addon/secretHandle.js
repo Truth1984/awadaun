@@ -8,7 +8,7 @@ require("../typedef");
 module.exports = (config) => {
   let secretConfig = config.secret;
   let directory = config.directories.secret;
-  let secretPath = un.filePathNormalize(directory, secretConfig.filename);
+  let secretPath = un.fileFullPath(directory, secretConfig.filename);
   if (un.fileExist(secretPath)) {
     return u.mapMerge(config, require(secretPath));
   }
