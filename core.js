@@ -67,7 +67,7 @@ un.textEncryptBase64 = (text, encrypting = true) => {
 un.filePathNormalize = (...path) =>
   u.stringReplace(paths.normalize(paths.join(...path)), { "~": process.env.HOME, "\\\\\\\\": "/", "\\\\": "/" });
 
-un.fileFullPath = (...path) => paths.resolve(...path);
+un.filePathFull = (...path) => paths.resolve(...path);
 
 un.filePathAnalyze = (...path) => {
   path = un.filePathNormalize(...path);
