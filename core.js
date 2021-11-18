@@ -123,10 +123,11 @@ un.fileMkdirTouch = (path, recursive = true) => {
   });
 };
 
-un.fileMove = async (source, target, mkdir = true, overwrite = true) => {
+un.fileMove = async (source, target, mkdir = true, overwrite = true, onlyCopy = false) => {
   source = un.filePathNormalize(source);
   target = un.filePathNormalize(target);
   if (mkdir) fse.mkdirpSync(paths.dirname(target));
+  if (onlyCopy) return fse.copySync(source, target, { overwrite });
   return fse.moveSync(source, target, { overwrite });
 };
 
